@@ -5,7 +5,6 @@ const ASSETS = [
   "/index.html",
   "/login.html",
   "/register.html",
-  "/chat",
   "/style.css",
   "/socket.io/socket.io.js"
 ];
