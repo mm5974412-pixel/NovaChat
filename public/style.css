@@ -108,3 +108,19 @@ body {
 .chat-form button:hover {
   background: #1d4ed8;
 }
+/* Кнопка выхода */
+.logout-btn {
+  cursor: pointer;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 14px;
+  margin-left: 10px;
+}
+
+.logout-btn:hover {
+  background: #dc2626;
+}
+
