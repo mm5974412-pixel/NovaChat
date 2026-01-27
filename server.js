@@ -71,6 +71,7 @@ initDb().catch((err) => {
 
 // Чтобы читать данные из форм
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 // Сессии: теперь в Postgres, а не в памяти
 app.use(
@@ -290,6 +291,7 @@ io.on("connection", (socket) => {
 server.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
 });
+
 
 
 
