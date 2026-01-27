@@ -57,17 +57,55 @@
     <p>&copy; 2026 NovaChat</p>
   </footer>
   
-  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker
-          .register("/service-worker.js")
-          .catch((err) => console.log("SW registration failed", err));
-      });
+<script>
+  let deferredPrompt;
+  const installBtn = document.getElementById("install-btn");
+
+  // Регистрация сервис-воркера
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("/service-worker.js")
+        .catch((err) => console.log("SW registration failed", err));
+    });
+  }
+
+  // Браузер сообщает, что сайт можно установить как приложение
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault(); // отключаем стандартный баннер
+    deferredPrompt = e;
+    if (installBtn) {
+      installBtn.style.display = "inline-flex"; // показываем кнопку
     }
-  </script>
+  });
+
+  // Клик по нашей кнопке "Установить NovaChat"
+  if (installBtn) {
+    installBtn.addEventListener("click", async () => {
+      if (!deferredPrompt) return;
+
+      deferredPrompt.prompt(); // открываем системное окно установки
+
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log("User choice:", outcome);
+
+      deferredPrompt = null;
+      installBtn.style.display = "none"; // прячем кнопку после попытки
+    });
+  }
+
+  // Если приложение уже установили
+  window.addEventListener("appinstalled", () => {
+    console.log("NovaChat installed");
+    if (installBtn) {
+      installBtn.style.display = "none";
+    }
+  });
+</script>
 </body>
 </html>
+
+
 
 
 
