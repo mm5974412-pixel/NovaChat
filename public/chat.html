@@ -86,108 +86,167 @@
   </footer>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-
-    const messagesDiv = document.getElementById("messages");
-    const form = document.getElementById("chat-form");
-    const input = document.getElementById("message-input");
-    const currentUsernameSpan = document.getElementById("current-username");
-    
- // Клик по "NovaChat" в сайдбаре — переход на главную
+<script>
+  const currentUsernameSpan = document.getElementById("current-username");
+  const chatList = document.getElementById("chat-list");
+  const newChatBtn = document.getElementById("new-chat-btn");
   const logoHeader = document.querySelector(".sidebar-header");
+
+  // Клик по "NovaChat" в сайдбаре — переход на главную
   if (logoHeader) {
     logoHeader.style.cursor = "pointer";
     logoHeader.addEventListener("click", () => {
       window.location.href = "/";
     });
   }
-    
-    let currentUser = null;
 
-    // Узнаём, кто вошёл
-    function loadCurrentUser() {
-      fetch("/me")
-        .then((res) => {
-          if (res.status === 401) {
-            window.location.href = "/login.html";
-            return null;
-          }
-          return res.json();
-        })
-        .then((data) => {
-          if (!data) return;
-          currentUser = data.username;
+  let currentUser = null;
+
+  // Узнаём, кто вошёл
+  function loadCurrentUser() {
+    fetch("/me")
+      .then((res) => {
+        if (res.status === 401) {
+          window.location.href = "/login.html";
+          return null;
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (!data) return;
+        currentUser = data.username;
+        if (currentUsernameSpan) {
           currentUsernameSpan.textContent = currentUser;
+        }
+      })
+      .catch(() => {
+        window.location.href = "/login.html";
+      });
+  }
+
+  // Рисуем список чатов в сайдбаре
+  function renderChats(chats) {
+    if (!chatList) return;
+
+    chatList.innerHTML = "";
+
+    if (!chats || chats.length === 0) {
+      const li = document.createElement("li");
+      li.style.fontSize = "12px";
+      li.style.color = "#6b7280";
+      li.style.padding = "4px 2px";
+      li.textContent = "У вас пока нет чатов.";
+      chatList.appendChild(li);
+      return;
+    }
+
+    chats.forEach((chat) => {
+      const li = document.createElement("li");
+      li.classList.add("chat-item");
+      li.dataset.chatId = chat.id;
+
+      const avatar = document.createElement("div");
+      avatar.classList.add("chat-avatar");
+      avatar.textContent = chat.peer_username
+        ? chat.peer_username[0].toUpperCase()
+        : "?";
+
+      const meta = document.createElement("div");
+      meta.classList.add("chat-meta");
+
+      const name = document.createElement("div");
+      name.classList.add("chat-name");
+      name.textContent = chat.peer_username;
+
+      const last = document.createElement("div");
+      last.classList.add("chat-last");
+      last.textContent = "Личный чат";
+
+      meta.appendChild(name);
+      meta.appendChild(last);
+      li.appendChild(avatar);
+      li.appendChild(meta);
+
+      li.addEventListener("click", () => {
+        const titleEl = document.getElementById("chat-title");
+        const subtitleEl = document.getElementById("chat-subtitle");
+
+        if (titleEl) titleEl.textContent = chat.peer_username;
+        if (subtitleEl)
+          subtitleEl.textContent =
+            "Личный чат. Сообщения скоро будут доступны.";
+
+        document
+          .querySelectorAll(".chat-item")
+          .forEach((el) => el.classList.remove("chat-item-active"));
+        li.classList.add("chat-item-active");
+      });
+
+      chatList.appendChild(li);
+    });
+  }
+
+  // Загружаем список чатов
+  function loadChats() {
+    fetch("/chats/list")
+      .then((res) => {
+        if (!res.ok) throw new Error("Ошибка загрузки чатов");
+        return res.json();
+      })
+      .then((data) => {
+        if (!data.ok) throw new Error(data.error || "Ошибка");
+        renderChats(data.chats);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  }
+
+  loadCurrentUser();
+  // Чуть ждём, чтобы сессия подтянулась, и загружаем чаты
+  setTimeout(loadChats, 500);
+
+  // Обработчик кнопки "Создать чат"
+  if (newChatBtn) {
+    newChatBtn.addEventListener("click", () => {
+      const username = prompt(
+        "Введите логин пользователя, с которым хотите чат:"
+      );
+      if (!username) return;
+
+      fetch("/chats/new", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username: username.trim() }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.ok) {
+            alert(data.error || "Не удалось создать чат");
+            return;
+          }
+
+          if (data.existing) {
+            alert(
+              `Чат с пользователем ${data.peerUsername} уже существует. Переключаюсь на него.`
+            );
+          } else {
+            alert(`Создан новый чат с пользователем ${data.peerUsername}.`);
+          }
+
+          loadChats();
         })
         .catch(() => {
-          window.location.href = "/login.html";
+          alert("Ошибка сервера при создании чата");
         });
-    }
-
-    loadCurrentUser();
-    
-    const newChatBtn = document.getElementById("new-chat-btn");
-
-if (newChatBtn) {
-  newChatBtn.addEventListener("click", () => {
-    alert("Здесь скоро будет создание личного чата 🙂");
-  });
-}
-
-    function addMessage(msg) {
-      const el = document.createElement("div");
-      el.classList.add("message");
-
-      const isMe = msg.author === currentUser;
-      if (isMe) {
-        el.classList.add("me");
-      }
-
-      const author = document.createElement("strong");
-      author.textContent = msg.author ? msg.author : "Аноним";
-
-      const text = document.createElement("span");
-      text.textContent = msg.text;
-
-      const time = document.createElement("span");
-      time.classList.add("message-time");
-      time.textContent = msg.time || "";
-
-      el.appendChild(author);
-      el.appendChild(text);
-      el.appendChild(time);
-
-      messagesDiv.appendChild(el);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-
- // socket.on("chat-history", (history) => {
-//   messagesDiv.innerHTML = "";
-//   history.forEach(addMessage);
-// });
-
-// socket.on("chat-message", (msg) => {
-//   addMessage(msg);
-// });
-
-// form.addEventListener("submit", (e) => {
-//   e.preventDefault();
-//   const text = input.value.trim();
-//   if (!text || !currentUser) return;
-//
-//   const time = new Date().toLocaleTimeString("ru-RU", {
-//     hour: "2-digit",
-//     minute: "2-digit",
-//   });
-//
-//   const msg = { author: currentUser, text, time };
-//   socket.emit("chat-message", msg);
-//   input.value = "";
-// });
-  </script>
+    });
+  }
+</script>
 </body>
 </html>
+
 
 
 
