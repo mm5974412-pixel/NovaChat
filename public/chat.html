@@ -9,13 +9,12 @@
   <header class="header">
     <h1>Школьный мессенджер</h1>
     <nav>
-  <a href="/">Главная</a>
-  <a href="/login.html">Вход</a>
-  <a href="/register.html">Регистрация</a>
-  <form action="/logout" method="POST" style="display:inline;">
-    <button type="submit">Выйти</button>
-  </form>
-</nav>
+      <a href="/">Главная</a>
+      <!-- В чате показываем только выход -->
+      <form id="logout-form" action="/logout" method="POST" style="display: inline;">
+        <button type="submit" class="logout-btn">Выйти</button>
+      </form>
+    </nav>
   </header>
 
   <main class="container">
@@ -28,7 +27,12 @@
       <div id="messages" class="chat-messages"></div>
 
       <form id="chat-form" class="chat-form">
-        <input id="message-input" type="text" placeholder="Введите сообщение..." autocomplete="off" />
+        <input
+          id="message-input"
+          type="text"
+          placeholder="Введите сообщение..."
+          autocomplete="off"
+        />
         <button type="submit">Отправить</button>
       </form>
     </div>
@@ -38,7 +42,6 @@
     <p>&copy; 2026 Школа №1</p>
   </footer>
 
-  <!-- Socket.io будет доступен по этому пути -->
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
@@ -126,4 +129,3 @@
   </script>
 </body>
 </html>
-
