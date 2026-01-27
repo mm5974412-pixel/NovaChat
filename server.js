@@ -26,6 +26,7 @@ const SESSION_SECRET =
 
 // Инициализация БД (создаём таблицу пользователей, если её нет)
 async function initDb() {
+  // Таблица пользователей
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
@@ -34,7 +35,17 @@ async function initDb() {
     );
   `);
 
-  console.log("База данных инициализирована (таблица users готова)");
+  // Таблица сообщений общего чата
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id SERIAL PRIMARY KEY,
+      author TEXT NOT NULL,
+      text TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
+  console.log("База данных инициализирована (users + messages готовы)");
 }
 
 initDb().catch((err) => {
@@ -231,3 +242,4 @@ io.on("connection", (socket) => {
 server.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
 });
+
