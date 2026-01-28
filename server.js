@@ -52,7 +52,7 @@ async function initDb() {
     );
   `);
 
-  // 4. Сообщения: УДАЛЯЕМ старую таблицу и создаём новую под личные чаты
+  // 4. Сообщения — ПОЛНОСТЬЮ ПЕРЕСОЗДАЁМ
   await pool.query(`DROP TABLE IF EXISTS messages;`);
 
   await pool.query(`
@@ -203,7 +203,7 @@ app.get("/me", (req, res) => {
 });
 
 
-// ======= СПИСОК ЛИЧНЫХ ЧАТОВ ПОЛЬЗОВАТЕЛЯ =======
+// ======= СПИСОК ЛИЧНЫХ ЧАТОВ =======
 
 app.get("/chats/list", async (req, res) => {
   if (!req.session.user) {
@@ -257,13 +257,12 @@ app.post("/chats/new", async (req, res) => {
   }
 
   try {
-    // Получаем свой логин
+    // логин текущего пользователя
     const selfUser = await pool.query(
       "SELECT username FROM users WHERE id = $1",
       [myId]
     );
 
-    // Запрет чата с самим собой
     if (
       selfUser.rowCount > 0 &&
       selfUser.rows[0].username === username
@@ -273,7 +272,7 @@ app.post("/chats/new", async (req, res) => {
         .json({ ok: false, error: "Нельзя создать чат с самим собой" });
     }
 
-    // Ищем другого пользователя
+    // другой пользователь
     const other = await pool.query(
       "SELECT id, username FROM users WHERE username = $1",
       [username]
@@ -287,7 +286,7 @@ app.post("/chats/new", async (req, res) => {
 
     const otherId = other.rows[0].id;
 
-    // Проверяем, есть ли уже чат
+    // есть ли уже чат между ними
     const existing = await pool.query(
       `
       SELECT c.id
@@ -308,11 +307,10 @@ app.post("/chats/new", async (req, res) => {
       });
     }
 
-    // Создаём новый чат
+    // создаём новый чат
     const chatInsert = await pool.query(
-      "INSERT INTO chats DEFAULT VALUES RETURNING id"
+      "INSERT INTO chats DEFAULT VALUES RETURNING id, created_at"
     );
-
     const chatId = chatInsert.rows[0].id;
 
     await pool.query(
@@ -335,6 +333,125 @@ app.post("/chats/new", async (req, res) => {
   }
 });
 
+
+// ======= ПОЛУЧЕНИЕ СООБЩЕНИЙ ЧАТА =======
+
+app.get("/chats/:chatId/messages", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ ok: false, error: "Не авторизован" });
+  }
+
+  const userId = req.session.user.id;
+  const chatId = parseInt(req.params.chatId, 10);
+
+  if (!chatId || Number.isNaN(chatId)) {
+    return res.status(400).json({ ok: false, error: "Некорректный chatId" });
+  }
+
+  try {
+    const memberCheck = await pool.query(
+      "SELECT 1 FROM chat_members WHERE chat_id = $1 AND user_id = $2 LIMIT 1;",
+      [chatId, userId]
+    );
+
+    if (memberCheck.rowCount === 0) {
+      return res
+        .status(403)
+        .json({ ok: false, error: "У вас нет доступа к этому чату" });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT
+        m.id,
+        u.username AS author,
+        m.text,
+        to_char(m.created_at, 'HH24:MI') AS time
+      FROM messages m
+      JOIN users u ON u.id = m.author_id
+      WHERE m.chat_id = $1
+      ORDER BY m.created_at ASC
+      LIMIT 200;
+      `,
+      [chatId]
+    );
+
+    res.json({ ok: true, messages: result.rows });
+  } catch (err) {
+    console.error("Ошибка при получении сообщений:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+
+// ======= ОТПРАВКА СООБЩЕНИЯ В ЧАТ =======
+
+app.post("/chats/:chatId/messages", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ ok: false, error: "Не авторизован" });
+  }
+
+  const userId = req.session.user.id;
+  const chatId = parseInt(req.params.chatId, 10);
+  const { text } = req.body;
+
+  if (!chatId || Number.isNaN(chatId)) {
+    return res.status(400).json({ ok: false, error: "Некорректный chatId" });
+  }
+
+  if (!text || !text.trim()) {
+    return res
+      .status(400)
+      .json({ ok: false, error: "Текст сообщения не может быть пустым" });
+  }
+
+  try {
+    const memberCheck = await pool.query(
+      "SELECT 1 FROM chat_members WHERE chat_id = $1 AND user_id = $2 LIMIT 1;",
+      [chatId, userId]
+    );
+
+    if (memberCheck.rowCount === 0) {
+      return res
+        .status(403)
+        .json({ ok: false, error: "У вас нет доступа к этому чату" });
+    }
+
+    const insertResult = await pool.query(
+      `
+      INSERT INTO messages (chat_id, author_id, text)
+      VALUES ($1, $2, $3)
+      RETURNING id, text, created_at;
+      `,
+      [chatId, userId, text.trim()]
+    );
+
+    const row = insertResult.rows[0];
+
+    const userResult = await pool.query(
+      "SELECT username FROM users WHERE id = $1;",
+      [userId]
+    );
+    const authorUsername =
+      userResult.rowCount > 0 ? userResult.rows[0].username : "Unknown";
+
+    res.json({
+      ok: true,
+      message: {
+        id: row.id,
+        author: authorUsername,
+        text: row.text,
+        time: new Date(row.created_at).toLocaleTimeString("ru-RU", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      },
+    });
+  } catch (err) {
+    console.error("Ошибка при отправке сообщения:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
 
 // ======= ВЫХОД И УДАЛЕНИЕ АККАУНТА =======
 
@@ -425,6 +542,7 @@ io.on("connection", (socket) => {
 server.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
 });
+
 
 
 
