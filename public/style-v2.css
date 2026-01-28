@@ -345,22 +345,6 @@ form input[type="password"] {
   font-weight: 500;
 }
 
-.sidebar-section-title {
-  margin-top: 4px;
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #6b7280;
-}
-
-.chat-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  flex: 1;
-  overflow-y: auto;
-}
-
 .chat-item {
   display: flex;
   gap: 10px;
@@ -403,12 +387,6 @@ form input[type="password"] {
 .chat-last {
   font-size: 11px;
   color: #6b7280;
-}
-
-.sidebar-footer {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 
 /* ===== Основная часть чата ===== */
@@ -599,34 +577,71 @@ body.light .message.me {
 
 @media (max-width: 900px) {
   .app {
-    grid-template-columns: minmax(0, 1fr);
-    height: auto;
-    margin: 12px auto;
-    padding: 0 8px;
+    grid-template-columns: 1fr;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
   }
 
+  /* Сайдбар на всю ширину — это экран списка чатов */
   .sidebar {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 10px 12px;
+    border-radius: 0;
+    border-right: none;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    height: 100vh;
   }
 
-  .current-user {
-    flex: 1;
-    margin: 0 8px;
+  /* По умолчанию чат-экран скрыт */
+  .chat-main {
+    display: none;
+    border-radius: 0;
+    height: 100vh;
   }
 
-  .chat-list,
-  .sidebar-footer,
-  .sidebar-section-title {
+  /* Когда открыт чат (класс на .app) */
+  .app.mobile-chat-open .sidebar {
     display: none;
   }
 
-  .chat-main {
-    margin-top: 8px;
-    height: calc(100vh - 220px);
+  .app.mobile-chat-open .chat-main {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Кнопка "назад" видна только на мобильных */
+  .back-btn-mobile {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: none;
+    background: #111827;
+    color: #e5e7eb;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .back-btn-mobile:hover {
+    background: #1f2937;
+  }
+
+  /* Список чатов на мобильных НЕ прячем */
+  .chat-list {
+    display: block;
+  }
+
+  /* Чуть уменьшим отступы для телефона */
+  .chat-main-input input {
+    font-size: 13px;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost {
+    font-size: 13px;
+    padding: 8px 14px;
   }
 }
 
@@ -664,3 +679,4 @@ body.light .message.me {
     padding: 8px 14px;
   }
 }
+
