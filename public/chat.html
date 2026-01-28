@@ -50,25 +50,30 @@
     </aside>
 
     <main class="chat-main">
-      <div class="chat-main-header">
-        <div class="chat-main-title" id="chat-title">Добро пожаловать в NovaChat</div>
-        <div class="chat-main-subtitle" id="chat-subtitle">
-          Создайте новый чат, чтобы начать переписку.
-        </div>
-      </div>
+  <div class="chat-main-header">
+    <!-- Кнопка назад для мобильной версии -->
+    <button id="back-to-chats" class="back-btn-mobile">
+      ← Чаты
+    </button>
 
-      <section id="messages" class="chat-main-messages"></section>
+    <div class="chat-main-title" id="chat-title">NovaChat</div>
+    <div class="chat-main-subtitle" id="chat-subtitle">
+      Выберите чат слева, чтобы начать переписку.
+    </div>
+  </div>
 
-      <form id="chat-form" class="chat-main-input">
-        <input
-          id="message-input"
-          type="text"
-          placeholder="Напишите сообщение..."
-          autocomplete="off"
-        />
-        <button type="submit" class="btn-primary">Отправить</button>
-      </form>
-    </main>
+  <section id="messages" class="chat-main-messages"></section>
+
+  <form id="chat-form" class="chat-main-input">
+    <input
+      id="message-input"
+      type="text"
+      placeholder="Напишите сообщение..."
+      autocomplete="off"
+    />
+    <button type="submit" class="btn-primary" id="send-btn">Отправить</button>
+  </form>
+</main>
   </div>
 
   <footer class="footer">
@@ -484,5 +489,6 @@
   </script>
 </body>
 </html>
+
 
 
