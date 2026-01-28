@@ -455,10 +455,29 @@ form input[type="password"] {
 }
 
 .message-time {
-  align-self: flex-end;
   font-size: 11px;
   color: #6b7280;
   margin-top: 2px;
+}
+
+.message-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-end;
+}
+
+.message-delete {
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.message-delete:hover {
+  color: #f87171;
 }
 
 /* Мои сообщения */
@@ -475,6 +494,14 @@ form input[type="password"] {
 
 .message.me .message-time {
   color: #dbeafe;
+}
+
+.message.me .message-delete {
+  color: #bfdbfe;
+}
+
+.message.me .message-delete:hover {
+  color: #fee2e2;
 }
 
 /* Поле ввода */
