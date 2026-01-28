@@ -30,12 +30,12 @@
 
       <div class="sidebar-section-title">Чаты</div>
 
-      <button id="new-chat-btn" class="btn-secondary" style="width:100%; margin: 6px 0 10px;">
+      <button id="new-chat-btn" class="btn-secondary" style="width: 100%; margin: 6px 0 10px;">
         ➕ Создать чат
       </button>
 
       <ul class="chat-list" id="chat-list">
-        <!-- чаты будут подставлены скриптом -->
+        <!-- чаты подставятся скриптом -->
       </ul>
 
       <div class="sidebar-footer">
@@ -97,7 +97,7 @@
     let currentUser = null;
     let currentChatId = null;
 
-    // Клик по "NovaChat" в сайдбаре — переход на главную
+    // Клик по "NovaChat" в шапке сайдбара — переход на главную
     if (logoHeader) {
       logoHeader.style.cursor = "pointer";
       logoHeader.addEventListener("click", () => {
@@ -105,10 +105,11 @@
       });
     }
 
-    // Переключатель темы (пока простая заглушка)
+    // Переключатель темы (чисто визуально: body.light)
     if (themeToggle) {
       themeToggle.addEventListener("click", () => {
         document.body.classList.toggle("light");
+        themeToggle.textContent = document.body.classList.contains("light") ? "☀️" : "🌙";
       });
     }
 
@@ -134,80 +135,7 @@
         });
     }
 
-    // Рисуем одно сообщение
-    function appendMessage(msg) {
-      if (!messagesDiv) return;
-
-      const el = document.createElement("div");
-      el.classList.add("message");
-      if (msg.id) {
-        el.dataset.messageId = msg.id;
-      }
-
-      const isMe = msg.author === currentUser;
-      if (isMe) {
-        el.classList.add("me");
-      }
-
-      const authorEl = document.createElement("strong");
-      authorEl.textContent = msg.author || "Аноним";
-
-      const textEl = document.createElement("span");
-      textEl.textContent = msg.text;
-
-      const timeEl = document.createElement("span");
-      timeEl.classList.add("message-time");
-      timeEl.textContent = msg.time || "";
-
-      const metaEl = document.createElement("div");
-      metaEl.classList.add("message-meta");
-      metaEl.appendChild(timeEl);
-
-      if (isMe && msg.id) {
-        const deleteBtn = document.createElement("button");
-        deleteBtn.type = "button";
-        deleteBtn.classList.add("message-delete");
-        deleteBtn.textContent = "Удалить";
-        deleteBtn.title = "Удалить сообщение";
-
-        deleteBtn.addEventListener("click", () => {
-          if (!currentChatId) return;
-          const confirmed = confirm("Удалить это сообщение?");
-          if (!confirmed) return;
-
-          fetch(`/chats/${currentChatId}/messages/${msg.id}`, {
-            method: "DELETE",
-          })
-            .then((res) => res.json())
-            .then((data) => {
-              if (!data.ok) {
-                throw new Error(data.error || "Не удалось удалить сообщение");
-              }
-              if (el.parentNode) {
-                el.parentNode.removeChild(el);
-              }
-              if (messagesDiv && messagesDiv.children.length === 0) {
-                showEmptyState("no-messages");
-              }
-            })
-            .catch((err) => {
-              console.error(err);
-              alert("Не удалось удалить сообщение");
-            });
-        });
-
-        metaEl.appendChild(deleteBtn);
-      }
-
-      el.appendChild(authorEl);
-      el.appendChild(textEl);
-      el.appendChild(metaEl);
-
-      messagesDiv.appendChild(el);
-      messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-
-    // Пустые состояния (нет чатов, нет сообщений и т.п.)
+    // Пустые состояния
     function showEmptyState(mode) {
       if (!messagesDiv) return;
 
@@ -235,6 +163,49 @@
       messagesDiv.appendChild(empty);
     }
 
+    // Рисуем одно сообщение
+    function appendMessage(msg) {
+      if (!messagesDiv) return;
+
+      const el = document.createElement("div");
+      el.classList.add("message");
+
+      if (msg.id) {
+        el.dataset.messageId = msg.id;
+      }
+
+      const isMe = msg.author === currentUser;
+      if (isMe) {
+        el.classList.add("me");
+      }
+
+      const authorEl = document.createElement("strong");
+      authorEl.textContent = msg.author || "Аноним";
+
+      const textEl = document.createElement("span");
+      textEl.textContent = msg.text;
+
+      const timeEl = document.createElement("span");
+      timeEl.classList.add("message-time");
+      timeEl.textContent = msg.time || "";
+
+      el.appendChild(authorEl);
+      el.appendChild(textEl);
+      el.appendChild(timeEl);
+
+      // Кнопка удаления только для своих сообщений
+      if (isMe && msg.id) {
+        const delBtn = document.createElement("button");
+        delBtn.classList.add("message-delete");
+        delBtn.type = "button";
+        delBtn.textContent = "×";
+        el.appendChild(delBtn);
+      }
+
+      messagesDiv.appendChild(el);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
     // Рисуем список сообщений
     function renderMessages(messages) {
       if (!messagesDiv) return;
@@ -249,7 +220,7 @@
       messages.forEach(appendMessage);
     }
 
-    // Загружаем сообщения конкретного чата
+    // Загружаем сообщения чата
     function loadMessages(chatId) {
       if (!chatId) return;
 
@@ -273,7 +244,6 @@
 
       chatList.innerHTML = "";
 
-      // Нет ни одного чата
       if (!chats || chats.length === 0) {
         const li = document.createElement("li");
         li.style.fontSize = "12px";
@@ -291,7 +261,7 @@
         return;
       }
 
-      // Есть чаты, но ещё ни один не выбран
+      // Есть чаты, но чат ещё не выбран
       if (!currentChatId) {
         if (chatTitleEl) chatTitleEl.textContent = "NovaChat";
         if (chatSubtitleEl)
@@ -326,7 +296,6 @@
         li.appendChild(avatar);
         li.appendChild(meta);
 
-        // Подсветить активный, если он выбран
         if (currentChatId && chat.id === currentChatId) {
           li.classList.add("chat-item-active");
         }
@@ -334,14 +303,11 @@
         li.addEventListener("click", () => {
           const prevChatId = currentChatId;
 
-          // отписываемся от предыдущего чата
           if (prevChatId) {
             socket.emit("leave-chat", prevChatId);
           }
 
           currentChatId = chat.id;
-
-          // подписываемся на новый чат
           socket.emit("join-chat", chat.id);
 
           if (chatTitleEl) chatTitleEl.textContent = chat.peer_username;
@@ -437,7 +403,6 @@
             if (!res.ok) {
               throw new Error("Ошибка ответа сервера");
             }
-            // ответ нам не нужен, сообщение придёт по сокету
             input.value = "";
           })
           .catch(() => {
@@ -446,12 +411,48 @@
       });
     }
 
-    // Слушаем новые сообщения по сокету
+    // Удаление сообщения по клику на "×"
+    if (messagesDiv) {
+      messagesDiv.addEventListener("click", (e) => {
+        const btn = e.target.closest(".message-delete");
+        if (!btn) return;
+
+        const msgEl = btn.closest(".message");
+        if (!msgEl) return;
+
+        const messageId = msgEl.dataset.messageId;
+        if (!messageId || !currentChatId) return;
+
+        if (!confirm("Удалить это сообщение?")) return;
+
+        fetch(`/chats/${currentChatId}/messages/${messageId}`, {
+          method: "DELETE",
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (!data.ok) {
+              alert(data.error || "Не удалось удалить сообщение");
+              return;
+            }
+
+            if (msgEl.parentNode) {
+              msgEl.parentNode.removeChild(msgEl);
+            }
+
+            if (!messagesDiv.querySelector(".message")) {
+              showEmptyState("no-messages");
+            }
+          })
+          .catch(() => {
+            alert("Ошибка сервера при удалении сообщения");
+          });
+      });
+    }
+
+    // Получаем новое сообщение по сокету
     socket.on("chat:new-message", (msg) => {
-      // Если открыт другой чат — игнорируем
       if (!currentChatId || msg.chatId !== currentChatId) return;
 
-      // если на экране был пустой стейт — убираем
       if (messagesDiv && messagesDiv.querySelector(".empty-state")) {
         messagesDiv.innerHTML = "";
       }
@@ -459,25 +460,27 @@
       appendMessage(msg);
     });
 
+    // Сообщение удалено
     socket.on("chat:delete-message", (payload) => {
-      if (!payload || !currentChatId || payload.chatId !== currentChatId) return;
+      if (!currentChatId || payload.chatId !== currentChatId) return;
+      if (!messagesDiv) return;
 
-      const messageEl = messagesDiv.querySelector(
-        `[data-message-id="${payload.messageId}"]`
+      const msgEl = messagesDiv.querySelector(
+        `.message[data-message-id="${payload.id}"]`
       );
-      if (messageEl) {
-        messageEl.remove();
-      }
+      if (!msgEl) return;
 
-      if (messagesDiv && messagesDiv.children.length === 0) {
+      msgEl.remove();
+
+      if (!messagesDiv.querySelector(".message")) {
         showEmptyState("no-messages");
       }
     });
 
-    // Старт: узнаём пользователя и подгружаем чаты
+    // Старт
     loadCurrentUser().then(() => {
       loadChats();
-      // опционально: автообновление списка чатов
+      // чуть-чуть обновляем список чатов
       setInterval(loadChats, 5000);
       window.addEventListener("focus", loadChats);
     });
