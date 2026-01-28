@@ -17,7 +17,6 @@
             <div class="logo-subtitle">онлайн-мессенджер</div>
           </div>
         </div>
-
       </div>
 
       <div class="current-user">
@@ -27,13 +26,15 @@
 
       <div class="sidebar-section-title">Чаты</div>
 
-      <button id="new-chat-btn" class="btn-secondary" style="width:100%; margin: 6px 0 10px;">
+    <button
+       id="new-chat-btn"
+       class="btn-secondary" 
+       style="width:100%; margin: 6px 0 10px;"
+      >
         ➕ Создать чат
       </button>
 
-      <ul class="chat-list" id="chat-list">
-        <!-- чаты подставятся скриптом -->
-      </ul>
+      <ul class="chat-list" id="chat-list"></ul>
 
       <div class="sidebar-footer">
         <form action="/logout" method="POST">
@@ -433,6 +434,7 @@ let joinedChatId = null; // какой чат сейчас подписан в s
 </script>
 </body>
 </html>
+
 
 
 
