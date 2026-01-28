@@ -214,8 +214,19 @@
       li.style.padding = "4px 2px";
       li.textContent = "У вас пока нет чатов.";
       chatList.appendChild(li);
+
+      // Когда чатов нет — показываем первоначальный текст
+    if (chatTitleEl) chatTitleEl.textContent = "Добро пожаловать в NovaChat";
+    if (chatSubtitleEl)
+      chatSubtitleEl.textContent = "Создайте новый чат, чтобы начать переписку.";
+      
       return;
     }
+    
+ // ЕСЛИ ХОТЯ БЫ ОДИН ЧАТ ЕСТЬ — меняем текст под «выберите чат»
+  if (chatTitleEl) chatTitleEl.textContent = "NovaChat";
+  if (chatSubtitleEl)
+    chatSubtitleEl.textContent = "Выберите чат слева, чтобы начать переписку.";
 
     chats.forEach((chat) => {
       const li = document.createElement("li");
@@ -360,6 +371,7 @@
 </script>
 </body>
 </html>
+
 
 
 
