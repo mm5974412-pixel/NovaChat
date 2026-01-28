@@ -98,7 +98,52 @@
 
     let currentUser = null;
     let currentChatId = null;
+    
+    const appRoot = document.querySelector(".app");
+const backBtn = document.getElementById("back-to-chats");
+const sendBtn = document.getElementById("send-btn");
+    
+    function isMobile() {
+  return window.matchMedia("(max-width: 900px)").matches;
+}
 
+// Показать экран чата (на телефоне)
+function openChatView() {
+  if (isMobile() && appRoot) {
+    appRoot.classList.add("mobile-chat-open");
+  }
+  updateInputState();
+}
+
+// Вернуться к списку чатов
+function closeChatView() {
+  currentChatId = null;
+
+  if (appRoot) {
+    appRoot.classList.remove("mobile-chat-open");
+  }
+
+  if (messagesDiv) messagesDiv.innerHTML = "";
+  if (chatTitleEl) chatTitleEl.textContent = "NovaChat";
+  if (chatSubtitleEl)
+    chatSubtitleEl.textContent = "Выберите чат слева, чтобы начать переписку.";
+
+  updateInputState();
+}
+
+// Блокируем ввод, если чат не выбран
+function updateInputState() {
+  const disabled = !currentChatId;
+  if (input) input.disabled = disabled;
+  if (sendBtn) sendBtn.disabled = disabled;
+}
+    
+if (backBtn) {
+  backBtn.addEventListener("click", () => {
+    closeChatView();
+  });
+}
+    
     // Клик по "NovaChat" в шапке сайдбара — переход на главную
     if (logoHeader) {
       logoHeader.style.cursor = "pointer";
@@ -322,6 +367,7 @@
           li.classList.add("chat-item-active");
 
           loadMessages(chat.id);
+          openChatView();
         });
 
         chatList.appendChild(li);
@@ -482,6 +528,7 @@
     // Старт
     loadCurrentUser().then(() => {
       loadChats();
+      updateInputState(); // ← ВАЖНО
       // чуть-чуть обновляем список чатов
       setInterval(loadChats, 5000);
       window.addEventListener("focus", loadChats);
@@ -489,6 +536,7 @@
   </script>
 </body>
 </html>
+
 
 
 
