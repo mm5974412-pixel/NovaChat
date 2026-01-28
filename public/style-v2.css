@@ -86,6 +86,16 @@ body {
   background: #1d4ed8;
 }
 
+/* Кнопка "Назад" — по умолчанию скрыта (для ПК) */
+.back-btn-mobile {
+  display: none;
+  border: none;
+  background: transparent;
+  color: #e5e7eb;
+  font-size: 13px;
+  cursor: pointer;
+}
+
 .btn-ghost {
   display: inline-flex;
   align-items: center;
@@ -583,7 +593,7 @@ body.light .message.me {
     padding: 0;
   }
 
-  /* Сайдбар на всю ширину — это экран списка чатов */
+  /* Сайдбар во весь экран — экран списка чатов */
   .sidebar {
     border-radius: 0;
     border-right: none;
@@ -591,14 +601,14 @@ body.light .message.me {
     height: 100vh;
   }
 
-  /* По умолчанию чат-экран скрыт */
+  /* Чат по умолчанию спрятан на мобиле */
   .chat-main {
     display: none;
     border-radius: 0;
     height: 100vh;
   }
 
-  /* Когда открыт чат (класс на .app) */
+  /* Когда открыт чат — прячем список, показываем чат */
   .app.mobile-chat-open .sidebar {
     display: none;
   }
@@ -608,7 +618,7 @@ body.light .message.me {
     flex-direction: column;
   }
 
-  /* Кнопка "назад" видна только на мобильных */
+  /* Кнопка "← Чаты" видна только на мобиле */
   .back-btn-mobile {
     display: inline-flex;
     align-items: center;
@@ -619,20 +629,17 @@ body.light .message.me {
     border: none;
     background: #111827;
     color: #e5e7eb;
-    font-size: 13px;
-    cursor: pointer;
   }
 
   .back-btn-mobile:hover {
     background: #1f2937;
   }
 
-  /* Список чатов на мобильных НЕ прячем */
+  /* Список чатов на телефоне показываем */
   .chat-list {
     display: block;
   }
 
-  /* Чуть уменьшим отступы для телефона */
   .chat-main-input input {
     font-size: 13px;
   }
@@ -679,4 +686,5 @@ body.light .message.me {
     padding: 8px 14px;
   }
 }
+
 
