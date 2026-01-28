@@ -288,6 +288,7 @@ form input[type="password"] {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  margin-top: auto;
 }
 
 .logo-left {
@@ -682,6 +683,7 @@ body.light .message.me {
     padding: 8px 14px;
   }
 }
+
 
 
 
