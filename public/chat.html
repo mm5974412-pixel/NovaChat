@@ -206,7 +206,8 @@
     if (!chatList) return;
 
     chatList.innerHTML = "";
-
+    
+    // Нет ни одного чата
     if (!chats || chats.length === 0) {
       const li = document.createElement("li");
       li.style.fontSize = "12px";
@@ -215,15 +216,17 @@
       li.textContent = "У вас пока нет чатов.";
       chatList.appendChild(li);
 
-      // Когда чатов нет — показываем первоначальный текст
+      // Шапка для пустого состояния
     if (chatTitleEl) chatTitleEl.textContent = "Добро пожаловать в NovaChat";
     if (chatSubtitleEl)
       chatSubtitleEl.textContent = "Создайте новый чат, чтобы начать переписку.";
+       // И сообщения заменяем на экран приветствия
+    renderMessages([]);
       
       return;
     }
     
- // ЕСЛИ ХОТЯ БЫ ОДИН ЧАТ ЕСТЬ — меняем текст под «выберите чат»
+ // Если чаты уже есть — другая шапка
   if (chatTitleEl) chatTitleEl.textContent = "NovaChat";
   if (chatSubtitleEl)
     chatSubtitleEl.textContent = "Выберите чат слева, чтобы начать переписку.";
@@ -371,6 +374,7 @@
 </script>
 </body>
 </html>
+
 
 
 
