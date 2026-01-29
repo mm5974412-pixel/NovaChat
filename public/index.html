@@ -8,12 +8,15 @@
   <title>NovaChat — быстрый мессенджер</title>
   <link rel="stylesheet" href="/style-v2.css" />
   <script>
-    // Проверяем сохранённую тему или используем системную
-    const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (savedTheme === 'light' || (!savedTheme && !prefersDark)) {
-      document.body.classList.add('light');
-    }
+    // Применяем сохранённую тему до отрисовки страницы
+    (function() {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const shouldBeLight = savedTheme === 'light' || (!savedTheme && !prefersDark);
+      if (shouldBeLight) {
+        document.documentElement.classList.add('light');
+      }
+    })();
   </script>
   <script src="/theme-toggle.js" defer></script>
 </head>
