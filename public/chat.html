@@ -8,42 +8,49 @@
 </head>
 <body>
   <div class="app">
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="logo-left">
-          <div class="logo-circle">N</div>
-          <div class="logo-text">
-            <div class="logo-name">NovaChat</div>
-            <div class="logo-subtitle">онлайн-мессенджер</div>
-          </div>
-        </div>
+<aside class="sidebar">
+  <!-- Шапка NovaChat -->
+  <div class="sidebar-header">
+    <div class="logo-circle">N</div>
+    <div class="logo-text">
+      <div class="logo-name">NovaChat</div>
+      <div class="logo-subtitle">онлайн-мессенджер</div>
+    </div>
+  </div>
 
-      <div class="current-user">
-        <span class="current-user-label">Вы:</span>
-        <span class="current-user-name" id="current-username">...</span>
-      </div>
+  <!-- Текущий пользователь -->
+  <div class="current-user">
+    <span class="current-user-label">Вы:</span>
+    <span class="current-user-name" id="current-username">...</span>
+  </div>
 
-      <div class="sidebar-section-title">Чаты</div>
+  <!-- Кнопка "Создать чат" сразу под блоком пользователя -->
+  <button
+    id="new-chat-btn"
+    class="btn-secondary"
+    style="width: 100%; margin: 10px 0 6px;"
+  >
+    ➕ Создать чат
+  </button>
 
-      <button id="new-chat-btn" class="btn-secondary" style="width:100%; margin: 6px 0 10px;">
-        ➕ Создать чат
-      </button>
+  <!-- Заголовок и список чатов -->
+  <div class="sidebar-section-title">Чаты</div>
+  <ul class="chat-list" id="chat-list"></ul>
 
-      <ul class="chat-list" id="chat-list"></ul>
-
-      <div class="sidebar-footer">
-        <form action="/logout" method="POST">
-          <button type="submit" class="btn-secondary">Выйти</button>
-        </form>
-        <form
-          action="/delete-account"
-          method="POST"
-          onsubmit="return confirm('Точно удалить аккаунт? Это действие необратимо.');"
-        >
-          <button type="submit" class="btn-ghost">Удалить аккаунт</button>
-        </form>
-      </div>
-    </aside>
+  <!-- Кнопки внизу -->
+  <div class="sidebar-footer">
+    <form action="/logout" method="POST">
+      <button type="submit" class="btn-secondary">Выйти</button>
+    </form>
+    <form
+      action="/delete-account"
+      method="POST"
+      onsubmit="return confirm('Точно удалить аккаунт? Это действие необратимо.');"
+    >
+      <button type="submit" class="btn-ghost">Удалить аккаунт</button>
+    </form>
+  </div>
+</aside>
 
     <main class="chat-main">
   <div class="chat-main-header">
@@ -365,6 +372,7 @@
 </script>
 </body>
 </html>
+
 
 
 
