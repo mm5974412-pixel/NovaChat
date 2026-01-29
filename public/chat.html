@@ -108,6 +108,12 @@
   const backBtn = document.getElementById("back-to-chats");
   const deleteChatBtn = document.getElementById("delete-chat-btn");
   
+  // 🔥 Автоскролл к последнему сообщению
+  function scrollMessagesToBottom() {
+    if (!messagesDiv) return;
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+  
   // Кнопка "Удалить чат" по умолчанию скрыта
   if (deleteChatBtn) {
     deleteChatBtn.style.display = "none";
@@ -213,7 +219,8 @@
     }
 
     messagesDiv.appendChild(el);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    // 🔥 автоскролл после добавления сообщения
+    scrollMessagesToBottom();
   }
 
   // Рисуем список сообщений
@@ -240,6 +247,8 @@
     }
 
     messages.forEach(appendMessage);
+    // 🔥 после загрузки истории тоже скроллим вниз
+    scrollMessagesToBottom();
   }
 
   // Загрузка сообщений конкретного чата
@@ -541,7 +550,7 @@
         chatSubtitleEl.textContent =
           "Выберите чат слева, чтобы начать переписку.";
       
-            // скрываем "Удалить чат"
+      // скрываем "Удалить чат"
       if (deleteChatBtn) {
         deleteChatBtn.style.display = "none";
         deleteChatBtn.removeAttribute("data-chat-id");
@@ -578,4 +587,3 @@
 </script>
 </body>
 </html>
-
