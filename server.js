@@ -520,6 +520,45 @@ app.delete("/chats/:chatId/messages/:messageId", async (req, res) => {
   }
 });
 
+// ======= УДАЛЕНИЕ ЧАТА =======
+app.delete("/chats/:chatId", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ ok: false, error: "Не авторизован" });
+  }
+
+  const userId = req.session.user.id;
+  const chatId = parseInt(req.params.chatId, 10);
+
+  if (!chatId || Number.isNaN(chatId)) {
+    return res.status(400).json({ ok: false, error: "Некорректный chatId" });
+  }
+
+  try {
+    // Проверяем, что пользователь вообще участник этого чата
+    const memberCheck = await pool.query(
+      "SELECT 1 FROM chat_members WHERE chat_id = $1 AND user_id = $2 LIMIT 1;",
+      [chatId, userId]
+    );
+
+    if (memberCheck.rowCount === 0) {
+      return res
+        .status(403)
+        .json({ ok: false, error: "У вас нет доступа к этому чату" });
+    }
+
+    // Удаляем чат — сообщения и участники уйдут каскадом
+    await pool.query("DELETE FROM chats WHERE id = $1;", [chatId]);
+
+    // 🔥 Сообщаем всем клиентам, что список чатов обновился
+    io.emit("chats:updated");
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("Ошибка при удалении чата:", err);
+    return res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
 // ======= ВЫХОД И УДАЛЕНИЕ АККАУНТА =======
 app.post("/logout", (req, res) => {
   req.session.destroy(() => {
@@ -547,6 +586,7 @@ app.post("/delete-account", async (req, res) => {
 server.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
 });
+
 
 
 
