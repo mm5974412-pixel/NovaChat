@@ -594,68 +594,19 @@ body.light .message.me {
 
 @media (max-width: 900px) {
   .app {
-    grid-template-columns: 1fr;
-    height: 100vh;
-    margin: 0;
-    padding: 0;
+    grid-template-columns: minmax(0, 1fr);  /* одна колонка */
+    height: auto;
+    margin: 12px auto;
+    padding: 0 8px;
   }
 
-  /* Сайдбар во весь экран — экран списка чатов */
   .sidebar {
-    border-radius: 0;
-    border-right: none;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-    height: 100vh;
+    margin-bottom: 8px;
+    height: auto;
   }
 
-  /* Чат по умолчанию спрятан на мобиле */
   .chat-main {
-    display: none;
-    border-radius: 0;
-    height: 100vh;
-  }
-
-  /* Когда открыт чат — прячем список, показываем чат */
-  .app.mobile-chat-open .sidebar {
-    display: none;
-  }
-
-  .app.mobile-chat-open .chat-main {
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* Кнопка "← Чаты" видна только на мобиле */
-  .back-btn-mobile {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 12px;
-    padding: 6px 10px;
-    border-radius: 999px;
-    border: none;
-    background: #111827;
-    color: #e5e7eb;
-  }
-
-  .back-btn-mobile:hover {
-    background: #1f2937;
-  }
-
-  /* Список чатов на телефоне показываем */
-  .chat-list {
-    display: block;
-  }
-
-  .chat-main-input input {
-    font-size: 13px;
-  }
-
-  .btn-primary,
-  .btn-secondary,
-  .btn-ghost {
-    font-size: 13px;
-    padding: 8px 14px;
+    height: calc(100vh - 260px);  /* чтобы влезала строка ввода и кнопка */
   }
 }
 
@@ -693,6 +644,7 @@ body.light .message.me {
     padding: 8px 14px;
   }
 }
+
 
 
 
