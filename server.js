@@ -85,8 +85,18 @@ async function initDb() {
     );
   `);
 
+  // 5. Блокировки пользователей
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS blocked_users (
+      blocker_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      blocked_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (blocker_id, blocked_id)
+    );
+  `);
+
   console.log(
-    "База данных инициализирована (users, chats, chat_members, messages готовы)"
+    "База данных инициализирована (users, chats, chat_members, messages, blocked_users готовы)"
   );
 }
 
@@ -227,6 +237,7 @@ app.get("/chats/list", async (req, res) => {
       SELECT
         c.id,
         c.created_at,
+        u.id AS peer_user_id,
         u.username AS peer_username
       FROM chats c
       JOIN chat_members cm_self
@@ -580,6 +591,78 @@ app.post("/delete-account", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.send("Ошибка при удалении аккаунта");
+  }
+});
+
+// ======= БЛОКИРОВКА/РАЗБЛОКИРОВКА ПОЛЬЗОВАТЕЛЕЙ =======
+
+// Получить статус блокировки
+app.get("/api/block-status/:userId", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ ok: false, error: "Не авторизирован" });
+  }
+
+  try {
+    const { userId } = req.params;
+    const result = await pool.query(
+      "SELECT 1 FROM blocked_users WHERE blocker_id = $1 AND blocked_id = $2 LIMIT 1;",
+      [req.session.user.id, userId]
+    );
+
+    return res.json({ ok: true, isBlocked: result.rowCount > 0 });
+  } catch (err) {
+    console.error("Ошибка при проверке блокировки:", err);
+    return res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// Заблокировать пользователя
+app.post("/api/block-user/:userId", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ ok: false, error: "Не авторизирован" });
+  }
+
+  try {
+    const { userId } = req.params;
+    const blockerId = req.session.user.id;
+
+    // Нельзя заблокировать самого себя
+    if (parseInt(userId) === blockerId) {
+      return res.status(400).json({ ok: false, error: "Нельзя заблокировать себя" });
+    }
+
+    // Вставляем (если уже заблокирован, будет игнорировано из-за PRIMARY KEY)
+    await pool.query(
+      "INSERT INTO blocked_users (blocker_id, blocked_id) VALUES ($1, $2) ON CONFLICT DO NOTHING;",
+      [blockerId, userId]
+    );
+
+    return res.json({ ok: true, isBlocked: true });
+  } catch (err) {
+    console.error("Ошибка при блокировке:", err);
+    return res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// Разблокировать пользователя
+app.post("/api/unblock-user/:userId", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ ok: false, error: "Не авторизирован" });
+  }
+
+  try {
+    const { userId } = req.params;
+    const blockerId = req.session.user.id;
+
+    await pool.query(
+      "DELETE FROM blocked_users WHERE blocker_id = $1 AND blocked_id = $2;",
+      [blockerId, userId]
+    );
+
+    return res.json({ ok: true, isBlocked: false });
+  } catch (err) {
+    console.error("Ошибка при разблокировке:", err);
+    return res.status(500).json({ ok: false, error: "Ошибка сервера" });
   }
 });
 

@@ -73,17 +73,10 @@
     </button>
 
     <div class="chat-main-titles">
-      <div class="chat-main-title" id="chat-title">NovaChat</div>
+      <div class="chat-main-title" id="chat-title" style="cursor: pointer; color: #2563eb;">NovaChat</div>
       <div class="chat-main-subtitle" id="chat-subtitle">
         Выберите чат слева, чтобы начать переписку.
       </div>
-      <button
-        id="delete-chat-btn"
-        class="btn-ghost"
-        style="margin-top: 8px; display: none;"
-      >
-        Удалить чат
-      </button>
     </div>
     
     <button id="theme-toggle" class="theme-toggle">🌙</button>
@@ -97,6 +90,21 @@
     <button type="submit" class="btn-primary" id="send-btn">Отправить</button>
   </form>
 </main>
+
+  <!-- Модальное окно профиля -->
+  <div id="profile-modal" class="profile-modal">
+    <div class="profile-modal-content">
+      <button class="profile-modal-close" id="profile-close">✕</button>
+      <div class="profile-avatar-container">
+        <div class="profile-avatar" id="profile-avatar">?</div>
+      </div>
+      <h2 id="profile-username">Имя пользователя</h2>
+      <div class="profile-actions">
+        <button id="profile-block-btn" class="btn-ghost" style="width: 100%;">Заблокировать</button>
+        <button id="profile-delete-chat-btn" class="btn-ghost" style="width: 100%; margin-top: 8px;">Удалить чат</button>
+      </div>
+    </div>
+  </div>
   </div>
 
   <footer class="footer">
@@ -593,6 +601,153 @@
       el.remove();
     }
   });
+
+  // ===== ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ =====
+  const profileModal = document.getElementById('profile-modal');
+  const profileClose = document.getElementById('profile-close');
+  const chatTitleBtn = document.getElementById('chat-title');
+  const profileUsername = document.getElementById('profile-username');
+  const profileAvatar = document.getElementById('profile-avatar');
+  const profileBlockBtn = document.getElementById('profile-block-btn');
+  const profileDeleteChatBtn = document.getElementById('profile-delete-chat-btn');
+
+  let currentPeerUserId = null;
+  let currentPeerUsername = null;
+
+  // Открыть профиль по клику на имя пользователя
+  if (chatTitleBtn) {
+    chatTitleBtn.addEventListener('click', () => {
+      if (!currentChatId || !currentPeerUserId || !currentPeerUsername) return;
+      openProfileModal();
+    });
+  }
+
+  function openProfileModal() {
+    profileUsername.textContent = currentPeerUsername || 'Пользователь';
+    profileAvatar.textContent = (currentPeerUsername || '?')[0].toUpperCase();
+    
+    profileModal.classList.add('show');
+    
+    // Загрузить статус блокировки
+    loadBlockStatus();
+  }
+
+  function loadBlockStatus() {
+    if (!currentPeerUserId) return;
+    
+    fetch(`/api/block-status/${currentPeerUserId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data.ok) throw new Error(data.error);
+        
+        if (data.isBlocked) {
+          profileBlockBtn.textContent = 'Разблокировать';
+          profileBlockBtn.dataset.blocked = 'true';
+        } else {
+          profileBlockBtn.textContent = 'Заблокировать';
+          profileBlockBtn.dataset.blocked = 'false';
+        }
+      })
+      .catch(err => console.error('Ошибка загрузки статуса блокировки:', err));
+  }
+
+  // Закрыть профиль
+  if (profileClose) {
+    profileClose.addEventListener('click', () => {
+      profileModal.classList.remove('show');
+    });
+  }
+
+  // Клик за пределы модали
+  profileModal.addEventListener('click', (e) => {
+    if (e.target === profileModal) {
+      profileModal.classList.remove('show');
+    }
+  });
+
+  // Кнопка блокировки
+  if (profileBlockBtn) {
+    profileBlockBtn.addEventListener('click', async () => {
+      if (!currentPeerUserId) return;
+      
+      const isBlocked = profileBlockBtn.dataset.blocked === 'true';
+      const endpoint = isBlocked ? 'unblock' : 'block';
+      const url = `/api/${endpoint}-user/${currentPeerUserId}`;
+      
+      try {
+        const res = await fetch(url, { method: 'POST' });
+        const data = await res.json();
+        
+        if (!data.ok) {
+          alert(data.error || 'Ошибка при изменении статуса блокировки');
+          return;
+        }
+        
+        // Обновить кнопку
+        if (data.isBlocked !== undefined) {
+          loadBlockStatus();
+        }
+      } catch (err) {
+        alert('Ошибка сервера');
+        console.error(err);
+      }
+    });
+  }
+
+  // Кнопка удалить чат из профиля
+  if (profileDeleteChatBtn) {
+    profileDeleteChatBtn.addEventListener('click', () => {
+      if (!currentChatId) return;
+      
+      if (!confirm('Точно удалить этот чат? История переписки будет удалена.')) {
+        return;
+      }
+
+      fetch(`/chats/${currentChatId}`, {
+        method: 'DELETE',
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.ok) {
+            alert(data.error || 'Не удалось удалить чат');
+            return;
+          }
+
+          // выходим из комнаты
+          socket.emit('leave-chat', currentChatId);
+
+          // сбрасываем состояние
+          currentChatId = null;
+          currentPeerUserId = null;
+          currentPeerUsername = null;
+          messagesDiv.innerHTML = '';
+
+          if (chatTitleEl) chatTitleEl.textContent = 'NovaChat';
+          if (chatSubtitleEl)
+            chatSubtitleEl.textContent =
+              'Создайте новый чат, чтобы начать переписку.';
+
+          profileModal.classList.remove('show');
+
+          // на мобиле возвращаемся на список чатов
+          document.body.classList.remove('mobile-dialog-open');
+
+          // перезагружаем список чатов
+          loadChats();
+        })
+        .catch(() => {
+          alert('Ошибка сервера при удалении чата');
+        });
+    });
+  }
+
+  // Переопределить openChat чтобы сохранять ID и имя собеседника
+  const originalOpenChat = openChat;
+  window.openChat = function(chat) {
+    currentPeerUserId = chat.peer_user_id || null;
+    currentPeerUsername = chat.peer_username || null;
+    originalOpenChat(chat);
+  };
 
   // Старт: сначала узнаём пользователя, потом подгружаем чаты
   loadCurrentUser().then(() => {
