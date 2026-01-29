@@ -685,7 +685,25 @@ body.light .message.me {
     font-size: 13px;
     padding: 8px 14px;
   }
+
+  /* Кнопка удаления сообщения */
+.msg-delete-btn {
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 2px;
+  align-self: flex-end;
+ }
+
+.msg-delete-btn:hover {
+  color: #fca5a5;
+ }
+
 }
+
 
 
 
