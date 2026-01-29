@@ -427,6 +427,27 @@ form input[type="password"] {
   margin-bottom: 8px;
 }
 
+.chat-main-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.back-btn {
+  display: none;            /* на ПК скрыта */
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #334155;
+  background: transparent;
+  color: #e5e7eb;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.back-btn:hover {
+  background: #0f172a;
+}
+
 .chat-main-title {
   font-size: 16px;
   font-weight: 600;
@@ -644,6 +665,7 @@ body.light .message.me {
     padding: 8px 14px;
   }
 }
+
 
 
 
