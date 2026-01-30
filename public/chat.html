@@ -112,10 +112,68 @@
     </div>
   </div>
 
+  <!-- Модальное окно подтверждения -->
+  <div id="confirm-modal" class="confirm-modal">
+    <div class="confirm-modal-backdrop"></div>
+    <div class="confirm-modal-content">
+      <div class="confirm-modal-title" id="confirm-title"></div>
+      <div class="confirm-modal-message" id="confirm-message"></div>
+      <div class="confirm-modal-buttons">
+        <button id="confirm-cancel" class="confirm-btn confirm-btn-cancel">Отмена</button>
+        <button id="confirm-ok" class="confirm-btn confirm-btn-ok">ОК</button>
+      </div>
+    </div>
+  </div>
+
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
+    // Кастомная функция подтверждения (как в Telegram)
+    window.showConfirm = function(message, title = "Подтверждение", onConfirm = null, onCancel = null, okText = "ОК", cancelText = "Отмена", okStyle = "primary") {
+      const modal = document.getElementById("confirm-modal");
+      const titleEl = document.getElementById("confirm-title");
+      const messageEl = document.getElementById("confirm-message");
+      const okBtn = document.getElementById("confirm-ok");
+      const cancelBtn = document.getElementById("confirm-cancel");
+      
+      titleEl.textContent = title;
+      messageEl.textContent = message;
+      okBtn.textContent = okText;
+      cancelBtn.textContent = cancelText;
+      
+      // Изменяем стиль кнопки ОК в зависимости от типа действия
+      okBtn.className = `confirm-btn confirm-btn-ok confirm-btn-${okStyle}`;
+      
+      modal.classList.add("show");
+      
+      const handleOk = () => {
+        modal.classList.remove("show");
+        okBtn.removeEventListener("click", handleOk);
+        cancelBtn.removeEventListener("click", handleCancel);
+        if (onConfirm) onConfirm();
+      };
+      
+      const handleCancel = () => {
+        modal.classList.remove("show");
+        okBtn.removeEventListener("click", handleOk);
+        cancelBtn.removeEventListener("click", handleCancel);
+        if (onCancel) onCancel();
+      };
+      
+      okBtn.addEventListener("click", handleOk);
+      cancelBtn.addEventListener("click", handleCancel);
+      
+      // Закрытие по кнопке Escape
+      const handleKeyDown = (e) => {
+        if (e.key === "Escape") {
+          handleCancel();
+          document.removeEventListener("keydown", handleKeyDown);
+        }
+      };
+      document.addEventListener("keydown", handleKeyDown);
+    };
+
 document.addEventListener('DOMContentLoaded', function() {
   const socket = io();
 
@@ -302,9 +360,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
       delBtn.addEventListener("click", () => {
         if (!currentChatId) return;
-        if (!confirm("Удалить это сообщение?")) return;
-
-        fetch(`/chats/${currentChatId}/messages/${msg.id}`, {
+        showConfirm(
+          "Сообщение будет удалено безвозвратно",
+          "Удалить сообщение?",
+          () => {
+            fetch(`/chats/${currentChatId}/messages/${msg.id}`, {
           method: "DELETE",
         })
           .then((res) => res.json())
@@ -317,6 +377,12 @@ document.addEventListener('DOMContentLoaded', function() {
           .catch(() => {
             alert("Ошибка сервера при удалении сообщения");
           });
+          },
+          null,
+          "Удалить",
+          "Отмена",
+          "danger"
+        );
       });
 
       el.appendChild(delBtn);
@@ -656,45 +722,51 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
 
-      if (!confirm("Точно удалить этот чат? История переписки будет удалена.")) {
-        return;
-      }
+      showConfirm(
+        "История переписки будет удалена безвозвратно",
+        "Удалить этот чат?",
+        () => {
+          fetch(`/chats/${currentChatId}`, {
+            method: "DELETE",
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              if (!data.ok) {
+                alert(data.error || "Не удалось удалить чат");
+                return;
+              }
 
-      fetch(`/chats/${currentChatId}`, {
-        method: "DELETE",
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (!data.ok) {
-            alert(data.error || "Не удалось удалить чат");
-            return;
-          }
+              // выходим из комнаты
+              socket.emit("leave-chat", currentChatId);
 
-          // выходим из комнаты
-          socket.emit("leave-chat", currentChatId);
+              // сбрасываем состояние
+              currentChatId = null;
+              messagesDiv.innerHTML = "";
 
-          // сбрасываем состояние
-          currentChatId = null;
-          messagesDiv.innerHTML = "";
+              if (chatTitleEl) chatTitleEl.textContent = "NovaChat";
+              if (chatSubtitleEl)
+                chatSubtitleEl.textContent =
+                  "Создайте новый чат, чтобы начать переписку.";
 
-          if (chatTitleEl) chatTitleEl.textContent = "NovaChat";
-          if (chatSubtitleEl)
-            chatSubtitleEl.textContent =
-              "Создайте новый чат, чтобы начать переписку.";
+              if (deleteChatBtn) {
+                deleteChatBtn.style.display = "none";
+              }
 
-          if (deleteChatBtn) {
-            deleteChatBtn.style.display = "none";
-          }
+              // на мобиле возвращаемся на список чатов
+              document.body.classList.remove("mobile-dialog-open");
 
-          // на мобиле возвращаемся на список чатов
-          document.body.classList.remove("mobile-dialog-open");
-
-          // перезагружаем список чатов
-          loadChats();
-        })
-        .catch(() => {
-          alert("Ошибка сервера при удалении чата");
-        });
+              // перезагружаем список чатов
+              loadChats();
+            })
+            .catch(() => {
+              alert("Ошибка сервера при удалении чата");
+            });
+        },
+        null,
+        "Удалить",
+        "Отмена",
+        "danger"
+      );
     });
   }
 
@@ -1108,47 +1180,55 @@ document.addEventListener('DOMContentLoaded', function() {
     profileDeleteChatBtn.addEventListener('click', () => {
       if (!currentChatId) return;
       
-      if (confirm('Вы уверены, что хотите удалить этот чат?')) {
-        // Закрываем профиль
-        profileModal.classList.remove('show');
-        
-        // Удаляем чат (используем ту же логику, что и основная кнопка)
-        fetch(`/chats/${currentChatId}`, {
-          method: 'DELETE',
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            if (!data.ok) {
-              alert(data.error || 'Не удалось удалить чат');
-              return;
-            }
-
-            // выходим из комнаты
-            socket.emit('leave-chat', currentChatId);
-
-            // сбрасываем состояние
-            currentChatId = null;
-            messagesDiv.innerHTML = '';
-
-            if (chatTitleEl) chatTitleEl.textContent = 'NovaChat';
-            if (chatSubtitleEl)
-              chatSubtitleEl.textContent =
-                'Создайте новый чат, чтобы начать переписку.';
-
-            if (deleteChatBtn) {
-              deleteChatBtn.style.display = 'none';
-            }
-
-            // на мобиле возвращаемся на список чатов
-            document.body.classList.remove('mobile-dialog-open');
-
-            // перезагружаем список чатов
-            loadChats();
+      showConfirm(
+        'История переписки будет удалена безвозвратно',
+        'Удалить этот чат?',
+        () => {
+          // Закрываем профиль
+          profileModal.classList.remove('show');
+          
+          // Удаляем чат (используем ту же логику, что и основная кнопка)
+          fetch(`/chats/${currentChatId}`, {
+            method: 'DELETE',
           })
-          .catch(() => {
-            alert('Ошибка сервера при удалении чата');
-          });
-      }
+            .then((res) => res.json())
+            .then((data) => {
+              if (!data.ok) {
+                alert(data.error || 'Не удалось удалить чат');
+                return;
+              }
+
+              // выходим из комнаты
+              socket.emit('leave-chat', currentChatId);
+
+              // сбрасываем состояние
+              currentChatId = null;
+              messagesDiv.innerHTML = '';
+
+              if (chatTitleEl) chatTitleEl.textContent = 'NovaChat';
+              if (chatSubtitleEl)
+                chatSubtitleEl.textContent =
+                  'Создайте новый чат, чтобы начать переписку.';
+
+              if (deleteChatBtn) {
+                deleteChatBtn.style.display = 'none';
+              }
+
+              // на мобиле возвращаемся на список чатов
+              document.body.classList.remove('mobile-dialog-open');
+
+              // перезагружаем список чатов
+              loadChats();
+            })
+            .catch(() => {
+              alert('Ошибка сервера при удалении чата');
+            });
+        },
+        null,
+        "Удалить",
+        "Отмена",
+        "danger"
+      );
     });
   }
 

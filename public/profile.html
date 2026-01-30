@@ -90,12 +90,8 @@
             🚪 Выйти
           </button>
         </form>
-        <form
-          action="/delete-account"
-          method="POST"
-          onsubmit="return confirm('Точно удалить аккаунт? Это действие необратимо.');"
-        >
-          <button type="submit" class="btn-ghost" style="width: 100%;">
+        <form id="delete-account-form" style="margin: 0;">
+          <button type="button" id="delete-account-btn" class="btn-ghost" style="width: 100%;">
             🗑️ Удалить аккаунт
           </button>
         </form>
@@ -131,11 +127,69 @@
     </main>
   </div>
 
+  <!-- Модальное окно подтверждения -->
+  <div id="confirm-modal" class="confirm-modal">
+    <div class="confirm-modal-backdrop"></div>
+    <div class="confirm-modal-content">
+      <div class="confirm-modal-title" id="confirm-title"></div>
+      <div class="confirm-modal-message" id="confirm-message"></div>
+      <div class="confirm-modal-buttons">
+        <button id="confirm-cancel" class="confirm-btn confirm-btn-cancel">Отмена</button>
+        <button id="confirm-ok" class="confirm-btn confirm-btn-ok">ОК</button>
+      </div>
+    </div>
+  </div>
+
   <footer class="footer">
     <p>&copy; 2026 NovaChat — быстро, просто, красиво ✨</p>
   </footer>
 
   <script>
+    // Кастомная функция подтверждения (как в Telegram)
+    window.showConfirm = function(message, title = "Подтверждение", onConfirm = null, onCancel = null, okText = "ОК", cancelText = "Отмена", okStyle = "primary") {
+      const modal = document.getElementById("confirm-modal");
+      const titleEl = document.getElementById("confirm-title");
+      const messageEl = document.getElementById("confirm-message");
+      const okBtn = document.getElementById("confirm-ok");
+      const cancelBtn = document.getElementById("confirm-cancel");
+      
+      titleEl.textContent = title;
+      messageEl.textContent = message;
+      okBtn.textContent = okText;
+      cancelBtn.textContent = cancelText;
+      
+      // Изменяем стиль кнопки ОК в зависимости от типа действия
+      okBtn.className = `confirm-btn confirm-btn-ok confirm-btn-${okStyle}`;
+      
+      modal.classList.add("show");
+      
+      const handleOk = () => {
+        modal.classList.remove("show");
+        okBtn.removeEventListener("click", handleOk);
+        cancelBtn.removeEventListener("click", handleCancel);
+        if (onConfirm) onConfirm();
+      };
+      
+      const handleCancel = () => {
+        modal.classList.remove("show");
+        okBtn.removeEventListener("click", handleOk);
+        cancelBtn.removeEventListener("click", handleCancel);
+        if (onCancel) onCancel();
+      };
+      
+      okBtn.addEventListener("click", handleOk);
+      cancelBtn.addEventListener("click", handleCancel);
+      
+      // Закрытие по кнопке Escape
+      const handleKeyDown = (e) => {
+        if (e.key === "Escape") {
+          handleCancel();
+          document.removeEventListener("keydown", handleKeyDown);
+        }
+      };
+      document.addEventListener("keydown", handleKeyDown);
+    };
+
     // DOM-элементы
     const currentUsernameSpan = document.getElementById("current-username");
     const profileUsernameSpan = document.getElementById("profile-username");
@@ -183,6 +237,40 @@
     if (backToChatsProfileBtn) {
       backToChatsProfileBtn.addEventListener('click', () => {
         window.location.href = '/chat';
+      });
+    }
+
+    // Обработчик удаления аккаунта
+    const deleteAccountBtn = document.getElementById('delete-account-btn');
+    if (deleteAccountBtn) {
+      deleteAccountBtn.addEventListener('click', () => {
+        showConfirm(
+          "Все ваши чаты, сообщения и голосовые записи будут удалены безвозвратно. Это действие нельзя отменить.",
+          "Удалить аккаунт?",
+          () => {
+            // Отправляем запрос на удаление
+            fetch('/delete-account', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            })
+            .then(res => {
+              if (res.ok) {
+                window.location.href = '/login.html';
+              } else {
+                alert('Ошибка при удалении аккаунта');
+              }
+            })
+            .catch(() => {
+              alert('Ошибка сервера');
+            });
+          },
+          null,
+          "Удалить",
+          "Отмена",
+          "danger"
+        );
       });
     }
 
