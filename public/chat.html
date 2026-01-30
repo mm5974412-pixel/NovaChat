@@ -124,6 +124,7 @@
 
   <script src="/socket.io/socket.io.js"></script>
 <script>
+document.addEventListener('DOMContentLoaded', function() {
   const socket = io();
 
   // DOM-элементы
@@ -140,13 +141,13 @@
   const chatSubtitleEl = document.getElementById("chat-subtitle");
   const backBtn = document.getElementById("back-to-chats");
   const deleteChatBtn = document.getElementById("delete-chat-btn");
-  
+
   // 🔥 Автоскролл к последнему сообщению
   function scrollMessagesToBottom() {
     if (!messagesDiv) return;
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   }
-  
+
   // Кнопка "Удалить чат" по умолчанию скрыта
   if (deleteChatBtn) {
     deleteChatBtn.style.display = "none";
