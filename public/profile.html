@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NovaChat — профиль</title>
+  <link rel="stylesheet" href="/style-v2.css" />
+  <script>
+    // Проверяем сохранённую тему или используем системную
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (savedTheme === 'light' || (!savedTheme && !prefersDark)) {
+      document.body.classList.add('light');
+    }
+  </script>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <!-- Шапка NovaChat -->
+      <div class="sidebar-header">
+        <div class="logo-circle">N</div>
+        <div class="logo-text">
+          <div class="logo-name">NovaChat</div>
+          <div class="logo-subtitle">онлайн-мессенджер</div>
+        </div>
+      </div>
+
+      <!-- Кнопка назад -->
+      <button id="back-to-chats" class="back-btn" type="button">
+        ← Чаты
+      </button>
+
+      <!-- Заголовок -->
+      <div class="sidebar-section-title">Профиль</div>
+
+      <!-- Информация о пользователе -->
+      <div class="profile-info">
+        <div class="profile-avatar">?</div>
+        <div class="profile-username" id="current-username">Загрузка...</div>
+      </div>
+
+      <!-- Кнопки управления профилем -->
+      <div class="profile-actions">
+        <form action="/logout" method="POST">
+          <button type="submit" class="btn-secondary" style="width: 100%; margin: 10px 0;">
+            Выйти
+          </button>
+        </form>
+        <form
+          action="/delete-account"
+          method="POST"
+          onsubmit="return confirm('Точно удалить аккаунт? Это действие необратимо.');"
+        >
+          <button type="submit" class="btn-ghost" style="width: 100%;">
+            Удалить аккаунт
+          </button>
+        </form>
+      </div>
+    </aside>
+
+    <main class="chat-main">
+      <div class="chat-main-header">
+        <div class="chat-main-titles">
+          <div class="chat-main-title">Ваш профиль</div>
+          <div class="chat-main-subtitle">
+            Управляйте настройками и безопасностью своего аккаунта.
+          </div>
+        </div>
+      </div>
+
+      <section class="profile-content">
+        <h2>Информация об аккаунте</h2>
+        <p><strong>Имя пользователя:</strong> <span id="profile-username">Загрузка...</span></p>
+        <p><strong>Дата регистрации:</strong> <span id="profile-registered">Загрузка...</span></p>
+
+        <div class="profile-warning">
+          <p>
+            Удаление аккаунта приведёт к безвозвратному удалению всех ваших чатов и сообщений.
+          </p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <p>&copy; 2026 NovaChat</p>
+  </footer>
+
+  <script>
+    // DOM-элементы
+    const currentUsernameSpan = document.getElementById("current-username");
+    const profileUsernameSpan = document.getElementById("profile-username");
+    const profileRegisteredSpan = document.getElementById("profile-registered");
+    const profileAvatar = document.querySelector(".profile-avatar");
+    const backBtn = document.getElementById("back-to-chats");
+
+    // Загрузка информации о пользователе
+    function loadCurrentUser() {
+      return fetch("/me")
+        .then((res) => {
+          if (res.status === 401) {
+            window.location.href = "/login.html";
+            return null;
+          }
+          return res.json();
+        })
+        .then((data) => {
+          if (!data) return;
+
+          const username = data.username;
+          currentUsernameSpan.textContent = username;
+          profileUsernameSpan.textContent = username;
+          profileRegisteredSpan.textContent = new Date(data.registeredAt).toLocaleDateString('ru-RU');
+
+          // Устанавливаем первую букву как аватар
+          if (profileAvatar && username) {
+            profileAvatar.textContent = username[0].toUpperCase();
+          }
+        })
+        .catch(() => {
+          window.location.href = "/login.html";
+        });
+    }
+
+    // Кнопка "← Чаты"
+    if (backBtn) {
+      backBtn.addEventListener("click", () => {
+        window.location.href = "/chat";
+      });
+    }
+
+    // Загружаем данные при старте
+    loadCurrentUser();
+  </script>
+</body>
+</html>
