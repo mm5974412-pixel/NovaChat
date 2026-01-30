@@ -20,11 +20,7 @@
 </head>
 <body>
   <div class="app">
-    <!-- Кнопка открытия меню на мобильных -->
-    <button id="sidebar-toggle" class="btn-ghost" style="position:fixed;top:14px;left:14px;z-index:200;display:none;">
-      ☰
-    </button>
-<aside class="sidebar" id="sidebar">
+<aside class="sidebar">
   <!-- Шапка NovaChat -->
   <div class="sidebar-header">
     <div class="logo-circle">N</div>
@@ -72,7 +68,7 @@
  <div class="chat-main-header">
   <div class="chat-main-top">
     <!-- Кнопка "Чаты" для мобильного -->
-    <button id="back-to-chats" class="back-btn" type="button" style="display:none;">
+    <button id="back-to-chats" class="back-btn" type="button">
       ← Чаты
     </button>
 
@@ -119,43 +115,6 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // ======= Мобильное меню =======
-  const sidebar = document.getElementById('sidebar');
-  const sidebarToggle = document.getElementById('sidebar-toggle');
-  const backBtn = document.getElementById('back-to-chats');
-  function isMobile() {
-    return window.matchMedia('(max-width: 900px)').matches;
-  }
-  function updateSidebarMobile() {
-    if (isMobile()) {
-      sidebarToggle.style.display = 'block';
-      if (!sidebar.classList.contains('open')) {
-        sidebar.style.transform = 'translateX(-100%)';
-      }
-      backBtn.style.display = 'inline-block';
-    } else {
-      sidebarToggle.style.display = 'none';
-      sidebar.classList.remove('open');
-      sidebar.style.transform = '';
-      backBtn.style.display = 'none';
-    }
-  }
-  sidebarToggle.addEventListener('click', function() {
-    sidebar.classList.toggle('open');
-    if (sidebar.classList.contains('open')) {
-      sidebar.style.transform = 'translateX(0)';
-    } else {
-      sidebar.style.transform = 'translateX(-100%)';
-    }
-  });
-  backBtn.addEventListener('click', function() {
-    if (isMobile()) {
-      sidebar.classList.remove('open');
-      sidebar.style.transform = 'translateX(-100%)';
-    }
-  });
-  window.addEventListener('resize', updateSidebarMobile);
-  updateSidebarMobile();
   const socket = io();
 
   // DOM-элементы
