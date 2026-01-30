@@ -80,7 +80,6 @@
     </div>
     
     <div class="chat-main-actions">
-      <button id="delete-chat-btn" class="btn-ghost" style="display: none;" title="Удалить чат">🗑️</button>
       <button id="theme-toggle" class="theme-toggle">🌙</button>
     </div>
   </div>
@@ -305,7 +304,6 @@ document.addEventListener('DOMContentLoaded', function() {
   const chatTitleEl = document.getElementById("chat-title");
   const chatSubtitleEl = document.getElementById("chat-subtitle");
   const backBtn = document.getElementById("back-to-chats");
-  const deleteChatBtn = document.getElementById("delete-chat-btn");
   const fileInput = document.getElementById("file-input");
   const attachBtn = document.getElementById("attach-btn");
   const recordBtn = document.getElementById("record-btn");
@@ -317,9 +315,33 @@ document.addEventListener('DOMContentLoaded', function() {
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   }
 
-  // Кнопка "Удалить чат" по умолчанию скрыта
-  if (deleteChatBtn) {
-    deleteChatBtn.style.display = "none";
+  // Автоскролл при появлении новых сообщений и загрузке медиа
+  if (messagesDiv) {
+    const observer = new MutationObserver((mutations) => {
+      let shouldScroll = false;
+
+      mutations.forEach((mutation) => {
+        if (mutation.type === "childList" && mutation.addedNodes.length) {
+          shouldScroll = true;
+
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+            const media = node.querySelectorAll("img, video, audio");
+            media.forEach((el) => {
+              el.addEventListener("load", scrollMessagesToBottom, { once: true });
+              el.addEventListener("loadedmetadata", scrollMessagesToBottom, { once: true });
+            });
+          });
+        }
+      });
+
+      if (shouldScroll) {
+        scrollMessagesToBottom();
+      }
+    });
+
+    observer.observe(messagesDiv, { childList: true, subtree: false });
   }
 
   // Текущий пользователь и текущий чат
@@ -604,12 +626,6 @@ document.addEventListener('DOMContentLoaded', function() {
       chatSubtitleEl.textContent = "Личный чат. Сообщения сохраняются.";
     }
 
-    // 🔥 показываем кнопку "Удалить чат" только когда чат открыт
-    if (deleteChatBtn) {
-      deleteChatBtn.style.display = "inline-flex";
-      deleteChatBtn.dataset.chatId = String(chat.id);
-    }
-
     // Подписываем сокет на комнату этого чата
     socket.emit("join-chat", chat.id);
 
@@ -699,12 +715,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
       messagesDiv.innerHTML = "";
 
-      // нет чатов – скрываем кнопку удаления
-      if (deleteChatBtn) {
-        deleteChatBtn.style.display = "none";
-        deleteChatBtn.removeAttribute("data-chat-id");
-      }
-
       return;
     }
 
@@ -751,11 +761,6 @@ document.addEventListener('DOMContentLoaded', function() {
           .querySelectorAll(".chat-item")
           .forEach((el) => el.classList.remove("chat-item-active"));
         li.classList.add("chat-item-active");
-
-        // при выборе чата показываем кнопку "Удалить чат"
-        if (deleteChatBtn) {
-          deleteChatBtn.style.display = "inline-flex";
-        }
 
         openChat(chat);
       });
@@ -832,62 +837,6 @@ document.addEventListener('DOMContentLoaded', function() {
               showAlert("Ошибка сервера при создании чата", "Ошибка сервера", "ОК", "danger");
             });
         }
-      );
-    });
-  }
-
-  // 🔥 Кнопка "Удалить чат"
-  if (deleteChatBtn) {
-    deleteChatBtn.addEventListener("click", () => {
-      if (!currentChatId) {
-        showAlert("Сначала выберите чат", "Чат не выбран", "ОК", "primary");
-        return;
-      }
-
-      showConfirm(
-        "История переписки будет удалена безвозвратно",
-        "Удалить этот чат?",
-        () => {
-          fetch(`/chats/${currentChatId}`, {
-            method: "DELETE",
-          })
-            .then((res) => res.json())
-            .then((data) => {
-              if (!data.ok) {
-                showAlert(data.error || "Не удалось удалить чат", "Ошибка", "ОК", "danger");
-                return;
-              }
-
-              // выходим из комнаты
-              socket.emit("leave-chat", currentChatId);
-
-              // сбрасываем состояние
-              currentChatId = null;
-              messagesDiv.innerHTML = "";
-
-              if (chatTitleEl) chatTitleEl.textContent = "NovaChat";
-              if (chatSubtitleEl)
-                chatSubtitleEl.textContent =
-                  "Создайте новый чат, чтобы начать переписку.";
-
-              if (deleteChatBtn) {
-                deleteChatBtn.style.display = "none";
-              }
-
-              // на мобиле возвращаемся на список чатов
-              document.body.classList.remove("mobile-dialog-open");
-
-              // перезагружаем список чатов
-              loadChats();
-            })
-            .catch(() => {
-              showAlert("Произошла ошибка при удалении чата", "Ошибка сервера", "ОК", "danger");
-            });
-        },
-        null,
-        "Удалить",
-        "Отмена",
-        "danger"
       );
     });
   }
@@ -1153,11 +1102,6 @@ document.addEventListener('DOMContentLoaded', function() {
         chatSubtitleEl.textContent =
           "Выберите чат слева, чтобы начать переписку.";
       
-      // скрываем "Удалить чат"
-      if (deleteChatBtn) {
-        deleteChatBtn.style.display = "none";
-        deleteChatBtn.removeAttribute("data-chat-id");
-      }
     });
   }
 
@@ -1336,10 +1280,6 @@ document.addEventListener('DOMContentLoaded', function() {
               if (chatSubtitleEl)
                 chatSubtitleEl.textContent =
                   'Создайте новый чат, чтобы начать переписку.';
-
-              if (deleteChatBtn) {
-                deleteChatBtn.style.display = 'none';
-              }
 
               // на мобиле возвращаемся на список чатов
               document.body.classList.remove('mobile-dialog-open');
