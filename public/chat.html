@@ -172,7 +172,7 @@
     });
   }
 
-  // Загружаем инфу о текущем пользователе
+  // Загружаем инфу о текущем пользователе и обновляем интерфейс
   function loadCurrentUser() {
     return fetch("/me")
       .then((res) => {
@@ -186,14 +186,14 @@
         if (!data) return;
         currentUser = data;
         if (currentUsernameSpan) {
-          currentUsernameSpan.textContent = currentUser.username;
+          currentUsernameSpan.textContent = currentUser.username || "?";
         }
         // Добавляем обработчик клика для перехода в профиль
         const profileLink = document.getElementById("profile-link");
         if (profileLink) {
-          profileLink.addEventListener("click", () => {
+          profileLink.onclick = () => {
             window.location.href = "/profile.html";
-          });
+          };
         }
       })
       .catch(() => {
@@ -888,7 +888,8 @@
   }
 
   // Инициализация
-  loadChats();
-  updateEmptyState();
-  
+  loadCurrentUser().then(() => {
+    loadChats();
+    updateEmptyState();
+  });
 });
