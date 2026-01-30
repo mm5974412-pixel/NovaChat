@@ -1007,6 +1007,23 @@ html.light .theme-toggle:hover {
 
 /* ===== Мобильная адаптация (только телефоны/планшеты) ===== */
 @media (max-width: 900px) {
+  /* Список чатов по умолчанию, диалог — только после выбора */
+  body:not(.mobile-dialog-open) .chat-main {
+    display: none;
+  }
+  body.mobile-dialog-open .sidebar {
+    display: none;
+  }
+  body.mobile-dialog-open .chat-main {
+    display: flex;
+  }
+  .back-btn {
+    display: none;
+  }
+  body.mobile-dialog-open .back-btn {
+    display: inline-flex;
+  }
+
   .app {
     max-width: 100vw;
     height: auto;
