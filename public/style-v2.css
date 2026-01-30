@@ -1,3 +1,4 @@
+
 /* ======= Адаптив для мобильных и планшетов ======= */
 @media (max-width: 900px) {
   .app {
@@ -134,6 +135,7 @@
     font-size: 13px !important;
   }
 }
+
 /* ===== Модальное окно профиля ===== */
 .profile-modal {
   position: fixed;
