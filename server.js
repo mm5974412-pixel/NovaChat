@@ -171,11 +171,11 @@ const upload = multer({
     fileSize: 50 * 1024 * 1024, // 50MB макс размер файла
   },
   fileFilter: (req, file, cb) => {
-    // Разрешаем изображения, видео и документы
-    const allowedTypes = /jpeg|jpg|png|gif|webp|mp4|mov|avi|pdf|doc|docx|txt|zip|rar/;
+    // Разрешаем изображения, видео, аудио и документы
+    const allowedTypes = /jpeg|jpg|png|gif|webp|mp4|mov|avi|pdf|doc|docx|txt|zip|rar|mp3|wav|ogg|m4a|webm|mpeg/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
-    
+
     if (mimetype && extname) {
       return cb(null, true);
     } else {

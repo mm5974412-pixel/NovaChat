@@ -88,11 +88,13 @@
   <section id="messages" class="chat-main-messages"></section>
 
   <form id="chat-form" class="chat-main-input">
-    <input type="file" id="file-input" style="display: none;" accept="image/*,video/*,.pdf,.doc,.docx,.txt,.zip,.rar" />
+    <input type="file" id="file-input" style="display: none;" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip,.rar" />
     <button type="button" id="attach-btn" class="btn-ghost" style="padding: 10px 12px; border-radius: 50%;" title="Прикрепить файл">📎</button>
+    <button type="button" id="record-btn" class="btn-ghost record-btn" style="padding: 10px 12px; border-radius: 50%;" title="Записать голосовое">🎙️</button>
     <input id="message-input" type="text" placeholder="Напишите сообщение..." autocomplete="off"/>
     <button type="submit" class="btn-primary" id="send-btn">Отправить</button>
   </form>
+  <div id="recording-indicator" class="recording-indicator" style="display: none;">● Запись...</div>
 </main>
 
   <!-- Модальное окно профиля собеседника -->
@@ -133,6 +135,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const deleteChatBtn = document.getElementById("delete-chat-btn");
   const fileInput = document.getElementById("file-input");
   const attachBtn = document.getElementById("attach-btn");
+  const recordBtn = document.getElementById("record-btn");
+  const recordingIndicator = document.getElementById("recording-indicator");
 
   // 🔥 Автоскролл к последнему сообщению
   function scrollMessagesToBottom() {
@@ -246,6 +250,14 @@ document.addEventListener('DOMContentLoaded', function() {
         video.style.borderRadius = "8px";
         video.style.marginTop = "6px";
         el.appendChild(video);
+      } else if (fileType === 'audio') {
+        // Отображаем аудио
+        const audio = document.createElement("audio");
+        audio.src = fileUrl;
+        audio.controls = true;
+        audio.style.marginTop = "6px";
+        audio.style.width = "280px";
+        el.appendChild(audio);
       } else {
         // Отображаем ссылку на файл
         const fileLink = document.createElement("a");
@@ -777,6 +789,150 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error("Ошибка загрузки файла:", err);
         alert("Ошибка сервера при загрузке файла");
         fileInput.value = "";
+      }
+    });
+  }
+
+  // ===== Голосовые сообщения =====
+  let mediaRecorder = null;
+  let recordingStream = null;
+  let recordingChunks = [];
+  let isRecording = false;
+
+  function setRecordingUI(active) {
+    if (!recordBtn || !recordingIndicator) return;
+    recordBtn.classList.toggle("recording", active);
+    recordBtn.title = active ? "Остановить запись" : "Записать голосовое";
+    recordingIndicator.style.display = active ? "block" : "none";
+  }
+
+  function getSupportedMimeType() {
+    const types = [
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/ogg;codecs=opus",
+      "audio/ogg",
+      "audio/mp4",
+    ];
+    for (const type of types) {
+      if (window.MediaRecorder && MediaRecorder.isTypeSupported(type)) {
+        return type;
+      }
+    }
+    return "";
+  }
+
+  function getVoiceExtension(mimeType) {
+    if (!mimeType) return "webm";
+    if (mimeType.includes("ogg")) return "ogg";
+    if (mimeType.includes("mp4")) return "m4a";
+    if (mimeType.includes("mpeg")) return "mp3";
+    if (mimeType.includes("wav")) return "wav";
+    return "webm";
+  }
+
+  async function uploadVoiceMessage(blob) {
+    if (!currentChatId) {
+      alert("Сначала выберите чат слева или создайте новый.");
+      return;
+    }
+
+    if (!blob || blob.size === 0) {
+      alert("Запись слишком короткая.");
+      return;
+    }
+
+    if (blob.size > 50 * 1024 * 1024) {
+      alert("Файл слишком большой. Максимальный размер: 50MB");
+      return;
+    }
+
+    const extension = getVoiceExtension(blob.type);
+    const fileName = `voice-${Date.now()}.${extension}`;
+    const file = new File([blob], fileName, { type: blob.type || "audio/webm" });
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch(`/chats/${currentChatId}/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!data.ok) {
+        alert(data.error || "Не удалось отправить голосовое сообщение");
+        return;
+      }
+    } catch (err) {
+      console.error("Ошибка отправки голосового сообщения:", err);
+      alert("Ошибка сервера при отправке голосового сообщения");
+    }
+  }
+
+  async function startRecording() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      alert("Ваш браузер не поддерживает запись аудио.");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordingStream = stream;
+      recordingChunks = [];
+
+      const mimeType = getSupportedMimeType();
+      mediaRecorder = mimeType
+        ? new MediaRecorder(stream, { mimeType })
+        : new MediaRecorder(stream);
+
+      mediaRecorder.addEventListener("dataavailable", (event) => {
+        if (event.data && event.data.size > 0) {
+          recordingChunks.push(event.data);
+        }
+      });
+
+      mediaRecorder.addEventListener("stop", async () => {
+        const blob = new Blob(recordingChunks, { type: mediaRecorder.mimeType });
+        recordingChunks = [];
+
+        if (recordingStream) {
+          recordingStream.getTracks().forEach((track) => track.stop());
+          recordingStream = null;
+        }
+
+        await uploadVoiceMessage(blob);
+      });
+
+      mediaRecorder.start();
+      isRecording = true;
+      setRecordingUI(true);
+    } catch (err) {
+      console.error("Ошибка доступа к микрофону:", err);
+      alert("Не удалось получить доступ к микрофону.");
+    }
+  }
+
+  function stopRecording() {
+    if (!mediaRecorder || mediaRecorder.state !== "recording") return;
+    mediaRecorder.stop();
+    isRecording = false;
+    setRecordingUI(false);
+  }
+
+  if (recordBtn) {
+    recordBtn.addEventListener("click", async () => {
+      if (!currentChatId) {
+        alert("Сначала выберите чат слева или создайте новый.");
+        return;
+      }
+
+      if (isRecording) {
+        stopRecording();
+      } else {
+        await startRecording();
       }
     });
   }
