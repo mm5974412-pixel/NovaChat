@@ -557,6 +557,12 @@ form input[type="password"]:focus {
   padding: 0;
   flex: 1;              /* чтоб список занимал всё пространство до футера */
   overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.chat-list::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Opera */
 }
 
 .chat-item {

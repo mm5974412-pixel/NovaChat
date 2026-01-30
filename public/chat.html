@@ -6,29 +6,17 @@
   <title>NovaChat — чат</title>
   <link rel="stylesheet" href="/style-v2.css" />
   <script>
-    // Проверяем сохранённую тему или используем системную
-    const savedTheme = localStorage.getItem('theme');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    if (savedTheme === 'light' || (!savedTheme && !prefersDark)) {
-      document.body.classList.add('light');
-    }
-
-    // Кнопка переключения темы
-    const themeToggle = document.getElementById('theme-toggle');
-    if (themeToggle) {
-      themeToggle.addEventListener('click', () => {
-        if (document.body.classList.contains('light')) {
-          document.body.classList.remove('light');
-          localStorage.setItem('theme', 'dark');
-          themeToggle.textContent = '🌙';
-        } else {
-          document.body.classList.add('light');
-          localStorage.setItem('theme', 'light');
-          themeToggle.textContent = '☀️';
-        }
-      });
-    }
+    // Применяем сохранённую тему до отрисовки страницы
+    (function() {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const shouldBeLight = savedTheme === 'light' || (!savedTheme && !prefersDark);
+      if (shouldBeLight) {
+        document.documentElement.classList.add('light');
+      }
+    })();
   </script>
+  <script src="/theme-toggle.js" defer></script>
 </head>
 <body>
   <div class="app">
@@ -92,7 +80,6 @@
     </div>
     
     <div class="chat-main-actions">
-      <button id="delete-chat-btn" class="btn-ghost" style="display: none; margin-right: 8px;">🗑️ Удалить чат</button>
       <button id="theme-toggle" class="theme-toggle">🌙</button>
     </div>
   </div>
