@@ -356,6 +356,14 @@ app.post("/update-profile", upload.single("avatar"), async (req, res) => {
     // Обновляем сессию
     req.session.user.username = updatedUser.username;
 
+    // Отправляем обновление профиля всем подключенным пользователям через Socket.IO
+    io.emit("user-profile-updated", {
+      userId: userId,
+      username: updatedUser.username,
+      displayName: updatedUser.display_name,
+      avatarUrl: updatedUser.avatar_url,
+    });
+
     res.json({
       ok: true,
       username: updatedUser.username,

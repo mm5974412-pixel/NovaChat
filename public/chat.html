@@ -1166,6 +1166,50 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  // Обработка события обновления профиля пользователя
+  socket.on("user-profile-updated", (data) => {
+    if (!data) return;
+    
+    const { userId, displayName, avatarUrl } = data;
+    
+    // Обновляем данные текущего собеседника если это он
+    if (userId === currentPeerUserId) {
+      currentPeerDisplayName = displayName;
+      currentPeerAvatarUrl = avatarUrl;
+      
+      // Обновляем заголовок чата
+      const peerName = displayName || currentPeerUsername;
+      if (chatTitleEl) {
+        chatTitleEl.textContent = peerName || "Чат";
+      }
+      
+      // Обновляем модальное окно профиля если оно открыто
+      if (profileModal && profileModal.classList.contains('show')) {
+        profileUsername.textContent = peerName || 'Пользователь';
+        if (avatarUrl) {
+          profileAvatar.style.backgroundImage = `url('${avatarUrl}')`;
+          profileAvatar.style.backgroundSize = 'cover';
+          profileAvatar.style.backgroundPosition = 'center';
+          profileAvatar.textContent = '';
+        } else {
+          profileAvatar.style.backgroundImage = '';
+          profileAvatar.textContent = peerName ? peerName[0].toUpperCase() : '?';
+        }
+      }
+    }
+    
+    // Обновляем элемент в списке чатов
+    const chatItems = document.querySelectorAll('.chat-item');
+    chatItems.forEach((item) => {
+      const storedUserId = parseInt(item.dataset.chatId);
+      // Нам нужно сравнить с peer_user_id, но его нет в dataset
+      // Поэтому перезагружаем список чатов для актуальных данных
+    });
+    
+    // Перезагружаем список чатов для обновления аватаров и имен
+    loadChats();
+  });
+
   // ===== ПРОФИЛЬ ПОЛЬЗОВАТЕЛЯ =====
   const profileModal = document.getElementById('profile-modal');
   const profileClose = document.getElementById('profile-close');
