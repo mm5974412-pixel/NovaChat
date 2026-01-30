@@ -5,28 +5,30 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0,0,0,0.55);
+  background: linear-gradient(135deg, rgba(0,0,0,0.7), rgba(0,0,0,0.5));
   display: none;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   animation: modalFadeIn 0.3s ease;
+  backdrop-filter: blur(4px);
 }
 .profile-modal.show {
   display: flex;
 }
 .profile-modal-content {
   background: linear-gradient(135deg, #111827 0%, #0f172a 100%);
-  border-radius: 20px;
-  padding: 32px 24px 24px 24px;
-  min-width: 320px;
-  min-height: 220px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+  border-radius: 28px;
+  padding: 40px 32px 32px;
+  min-width: 360px;
+  min-height: 280px;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255, 255, 255, 0.1);
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   animation: modalSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 1px solid rgba(37, 99, 235, 0.2);
 }
 
 @keyframes modalFadeIn {
@@ -41,7 +43,7 @@
 @keyframes modalSlideUp {
   from {
     opacity: 0;
-    transform: translateY(20px) scale(0.95);
+    transform: translateY(24px) scale(0.92);
   }
   to {
     opacity: 1;
@@ -52,33 +54,53 @@
 .profile-modal-close {
   position: absolute;
   top: 12px;
-  left: 12px;
-  background: #fff;
+  right: 12px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   border: none;
-  border-radius: 6px;
-  width: 32px;
-  height: 32px;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
   font-size: 20px;
   cursor: pointer;
   z-index: 1;
   transition: all 0.2s ease;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 .profile-modal-close:hover {
   transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.5);
+  background: linear-gradient(135deg, #dc2626, #991b1b);
 }
 
 .profile-modal-close:active {
   transform: scale(0.95);
 }
 
+
 .profile-avatar-container {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  animation: avatarContainerSlideDown 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+@keyframes avatarContainerSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .profile-avatar {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   background: linear-gradient(135deg, #22c55e, #22d3ee);
   display: flex;
@@ -87,26 +109,66 @@
   font-size: 32px;
   color: #fff;
   font-weight: 700;
-  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.4);
+  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.4);
   animation: avatarBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border: 3px solid rgba(34, 197, 94, 0.3);
+  transition: all 0.3s ease;
 }
 
-@keyframes avatarBounce {
+.profile-avatar:hover {
+  transform: scale(1.08);
+  box-shadow: 0 12px 32px rgba(34, 197, 94, 0.5);
+}
+
+#profile-username {
+  font-size: 20px;
+  font-weight: 700;
+  color: #e5e7eb;
+  margin-top: 12px;
+  background: linear-gradient(135deg, #22c55e, #22d3ee);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: usernameFadeIn 0.6s ease 0.1s both;
+}
+
+@keyframes usernameFadeIn {
   from {
-    transform: scale(0.8);
+    opacity: 0;
   }
   to {
-    transform: scale(1);
+    opacity: 1;
   }
 }
 
 .profile-actions {
   width: 100%;
-  margin-top: 18px;
+  margin-top: 24px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  animation: actionsFadeIn 0.6s ease 0.2s both;
 }
+
+@keyframes actionsFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.profile-actions button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.profile-actions button:hover {
+  transform: translateY(-2px);
+}
+
 *,
 *::before,
 *::after {
@@ -431,76 +493,276 @@ html.light body {
 /* ===== Карточки авторизации (login / register) ===== */
 
 .auth-card {
-  max-width: 380px;
+  max-width: 420px;
   margin: 40px auto;
-  background: rgba(15, 23, 42, 0.98);
-  border-radius: 20px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  padding: 20px 20px 24px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(20, 30, 48, 0.95) 100%);
+  border-radius: 24px;
+  border: 1px solid rgba(37, 99, 235, 0.3);
+  padding: 32px 28px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: authCardSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes authCardSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .auth-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 32px 70px rgba(0, 0, 0, 0.6);
+  transform: translateY(-6px);
+  box-shadow: 0 32px 80px rgba(37, 99, 235, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  border-color: rgba(34, 197, 94, 0.4);
 }
 
 .auth-card h2 {
   margin-top: 0;
-  margin-bottom: 18px;
-  transition: color 0.3s ease;
+  margin-bottom: 24px;
+  font-size: 24px;
+  background: linear-gradient(135deg, #e5e7eb 0%, #9ca3af 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+  transition: all 0.3s ease;
 }
 
 .auth-card h2:hover {
-  color: #4ade80;
+  background: linear-gradient(135deg, #22c55e 0%, #22d3ee 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .form-row {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .form-row label {
   font-size: 13px;
+  font-weight: 600;
   color: #9ca3af;
+  letter-spacing: 0.3px;
 }
 
 form input[type="text"],
 form input[type="password"] {
-  padding: 8px 10px;
-  border-radius: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
   border: 1px solid #1f2937;
-  background: #020617;
+  background: linear-gradient(135deg, rgba(5, 15, 35, 0.6), rgba(15, 23, 42, 0.6));
   color: #e5e7eb;
   font-size: 14px;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 form input[type="text"]:focus,
 form input[type="password"]:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3);
+  border-color: #3b82f6;
+  background: rgba(15, 23, 42, 0.95);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25), inset 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .auth-card button[type="submit"] {
-  margin-top: 6px;
+  margin-top: 8px;
   width: 100%;
+  font-size: 15px;
+  padding: 12px 18px;
+  font-weight: 600;
 }
 
 .auth-alt {
-  margin-top: 12px;
+  margin-top: 16px;
   font-size: 13px;
   color: #9ca3af;
   transition: color 0.3s ease;
+  text-align: center;
 }
 
-.auth-alt:hover {
-  color: #e5e7eb;
+.auth-alt a {
+  color: #22c55e;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  position: relative;
 }
+
+.auth-alt a::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #22c55e, #22d3ee);
+  transition: width 0.3s ease;
+}
+
+.auth-alt a:hover {
+  color: #22d3ee;
+}
+
+.auth-alt a:hover::after {
+  width: 100%;
+}
+
+/* ===== Профиль пользователя ===== */
+
+.profile-info {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(34, 197, 94, 0.05));
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0;
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  transition: all 0.3s ease;
+  animation: profileInfoSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes profileInfoSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.profile-info:hover {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(34, 197, 94, 0.1));
+  border-color: rgba(34, 197, 94, 0.3);
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.2);
+}
+
+.profile-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #22c55e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3);
+  animation: avatarPulse 2s ease-in-out infinite;
+}
+
+@keyframes avatarPulse {
+  0%, 100% {
+    box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 24px rgba(34, 197, 94, 0.5);
+  }
+}
+
+.profile-username {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e5e7eb;
+  text-align: center;
+}
+
+.profile-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  animation: actionsSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+}
+
+@keyframes actionsSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.profile-content {
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.6), rgba(20, 30, 48, 0.4));
+  border-radius: 16px;
+  animation: contentFadeIn 0.7s ease 0.2s both;
+}
+
+@keyframes contentFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.profile-content h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 18px;
+  background: linear-gradient(135deg, #22c55e, #22d3ee);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+.profile-content p {
+  margin: 12px 0;
+  font-size: 14px;
+  color: #d1d5db;
+  line-height: 1.6;
+}
+
+.profile-warning {
+  margin-top: 24px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05));
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  color: #fca5a5;
+  font-size: 13px;
+  line-height: 1.5;
+  transition: all 0.3s ease;
+}
+
+.profile-warning:hover {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.1));
+  border-color: rgba(239, 68, 68, 0.3);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.profile-warning p {
+  color: #fca5a5;
+  margin: 0;
+}
+
+
+.auth-alt a:hover::after {
+  width: 100%;
+}
+
 
 /* ===== Основное приложение чата ===== */
 
@@ -512,43 +774,77 @@ form input[type="password"]:focus {
   grid-template-columns: 280px minmax(0, 1fr);
   gap: 16px;
   padding: 0 16px;
+  animation: appSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes appSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Сайдбар */
 
 .sidebar {
-  background: rgba(15, 23, 42, 0.98);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(20, 30, 48, 0.95));
   border-radius: 18px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 1px solid rgba(37, 99, 235, 0.2);
   padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  transition: all 0.3s ease;
+  animation: sidebarSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes sidebarSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.sidebar:hover {
+  border-color: rgba(34, 197, 94, 0.2);
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.1);
 }
 
 .sidebar-header {
   display: flex;
   align-items: center;
   gap: 10px;
+  padding: 8px 0;
+  animation: headerFadeIn 0.6s ease 0.1s both;
 }
 
 .logo-circle {
-  width: 32px;
-  height: 32px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #22c55e, #22d3ee);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #22c55e 0%, #22d3ee 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  color: #022c22;
-  font-size: 16px;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  color: #fff;
+  font-size: 18px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3);
+  flex-shrink: 0;
 }
 
 .logo-circle:hover {
-  transform: scale(1.1);
-  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.4), 0 8px 24px rgba(34, 211, 238, 0.4);
+  transform: scale(1.12) rotateZ(8deg);
+  box-shadow: 0 8px 24px rgba(34, 197, 94, 0.5), 0 4px 12px rgba(34, 211, 238, 0.3);
 }
 
 .logo-text {
@@ -558,28 +854,48 @@ form input[type="password"]:focus {
 
 .logo-name {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
+  background: linear-gradient(135deg, #22c55e, #22d3ee);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .logo-subtitle {
   font-size: 11px;
   color: #9ca3af;
+  letter-spacing: 0.2px;
 }
 
 .current-user {
-  padding: 8px 10px;
+  padding: 10px 14px;
   border-radius: 12px;
-  background: #020617;
-  border: 1px solid #111827;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(34, 197, 94, 0.05));
+  border: 1px solid rgba(37, 99, 235, 0.2);
   display: flex;
   gap: 8px;
-  align-items: baseline;
-  transition: all 0.3s ease;
+  align-items: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: userCardFadeIn 0.6s ease 0.2s both;
+}
+
+@keyframes userCardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .current-user:hover {
-  background: #0f172a;
-  border-color: #334155;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(34, 197, 94, 0.1));
+  border-color: rgba(34, 197, 94, 0.3);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+  transform: translateY(-1px);
+}  border-color: #334155;
   transform: translateY(-1px);
 }
 
@@ -836,16 +1152,34 @@ form input[type="password"]:focus {
   text-align: center;
   margin-top: 40px;
   color: #9ca3af;
+  animation: emptyStateFadeIn 0.6s ease 0.2s both;
+}
+
+@keyframes emptyStateFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .empty-state h2 {
   margin-bottom: 6px;
   font-size: 18px;
+  background: linear-gradient(135deg, #22c55e, #22d3ee);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
 }
 
 .empty-state p {
   margin: 0;
   font-size: 13px;
+  color: #9ca3af;
 }
 
 /* ===== Сообщения ===== */

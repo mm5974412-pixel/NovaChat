@@ -5,6 +5,50 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Вход — NovaChat</title>
   <link rel="stylesheet" href="/style-v2.css" />
+  <style>
+    .auth-page-header {
+      text-align: center;
+      margin-bottom: 32px;
+      animation: headerSlideDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes headerSlideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .auth-logo {
+      font-size: 48px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #22c55e 0%, #22d3ee 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 0 0 12px 0;
+      animation: logoBounce 2s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+    }
+
+    @keyframes logoBounce {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-8px);
+      }
+    }
+
+    .auth-subtitle {
+      color: #9ca3af;
+      font-size: 14px;
+      margin: 0;
+    }
+  </style>
   <script>
     // Применяем сохранённую тему до отрисовки страницы
     (function() {
@@ -32,8 +76,13 @@
   </header>
 
   <main class="container">
+    <div class="auth-page-header">
+      <h2 class="auth-logo">✨ NovaChat</h2>
+      <p class="auth-subtitle">Быстро. Просто. Красиво.</p>
+    </div>
+
     <div class="auth-card">
-      <h2>Вход в NovaChat</h2>
+      <h2>🔐 Вход в аккаунт</h2>
      <form action="/login" method="POST">
   <div class="form-row">
     <label for="username">Логин</label>
@@ -48,16 +97,16 @@
       autocomplete="current-password"
     />
   </div>
-  <button type="submit" class="btn-primary">Войти</button>
+  <button type="submit" class="btn-primary">⬆️ Войти</button>
 </form>
       <p class="auth-alt">
-        Нет аккаунта? <a href="/register.html">Создать</a>
+        Нет аккаунта? <a href="/register.html">Создать новый</a>
       </p>
     </div>
   </main>
 
   <footer class="footer">
-    <p>&copy; 2026 NovaChat</p>
+    <p>&copy; 2026 NovaChat — быстро, просто, красиво ✨</p>
   </footer>
 </body>
 </html>

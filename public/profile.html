@@ -5,6 +5,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NovaChat — профиль</title>
   <link rel="stylesheet" href="/style-v2.css" />
+  <style>
+    .profile-header-section {
+      animation: profileHeaderSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes profileHeaderSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .profile-info strong {
+      color: #22c55e;
+      font-weight: 700;
+    }
+
+    .profile-content section {
+      animation: sectionFadeIn 0.6s ease 0.2s both;
+    }
+
+    @keyframes sectionFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
   <script>
     // Применяем сохранённую тему до отрисовки страницы
     (function() {
@@ -23,7 +59,7 @@
     <aside class="sidebar">
       <!-- Шапка NovaChat -->
       <div class="sidebar-header">
-        <div class="logo-circle">N</div>
+        <div class="logo-circle">✨</div>
         <div class="logo-text">
           <div class="logo-name">NovaChat</div>
           <div class="logo-subtitle">онлайн-мессенджер</div>
@@ -51,7 +87,7 @@
         </button>
         <form action="/logout" method="POST">
           <button type="submit" class="btn-secondary" style="width: 100%; margin: 10px 0;">
-            Выйти
+            🚪 Выйти
           </button>
         </form>
         <form
@@ -60,7 +96,7 @@
           onsubmit="return confirm('Точно удалить аккаунт? Это действие необратимо.');"
         >
           <button type="submit" class="btn-ghost" style="width: 100%;">
-            Удалить аккаунт
+            🗑️ Удалить аккаунт
           </button>
         </form>
       </div>
@@ -69,7 +105,7 @@
     <main class="chat-main">
       <div class="chat-main-header">
         <div class="chat-main-titles">
-          <div class="chat-main-title">Ваш профиль</div>
+          <div class="chat-main-title">👤 Ваш профиль</div>
           <div class="chat-main-subtitle">
             Управляйте настройками и безопасностью своего аккаунта.
           </div>
@@ -80,13 +116,15 @@
       </div>
 
       <section class="profile-content">
-        <h2>Информация об аккаунте</h2>
-        <p><strong>Имя пользователя:</strong> <span id="profile-username">Загрузка...</span></p>
-        <p><strong>Дата регистрации:</strong> <span id="profile-registered">Загрузка...</span></p>
+        <h2>📊 Информация об аккаунте</h2>
+        <div style="background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(34, 197, 94, 0.05)); border-radius: 12px; padding: 16px; border: 1px solid rgba(37, 99, 235, 0.2); margin-bottom: 20px;">
+          <p><strong>👤 Логин:</strong> <span id="profile-username" style="color: #e5e7eb;">Загрузка...</span></p>
+          <p><strong>📅 Дата регистрации:</strong> <span id="profile-registered" style="color: #e5e7eb;">Загрузка...</span></p>
+        </div>
 
         <div class="profile-warning">
           <p>
-            Удаление аккаунта приведёт к безвозвратному удалению всех ваших чатов и сообщений.
+            ⚠️ <strong>Важно!</strong> Удаление аккаунта приведёт к безвозвратному удалению всех ваших чатов, сообщений и голосовых записей. Это действие нельзя отменить.
           </p>
         </div>
       </section>
@@ -94,7 +132,7 @@
   </div>
 
   <footer class="footer">
-    <p>&copy; 2026 NovaChat</p>
+    <p>&copy; 2026 NovaChat — быстро, просто, красиво ✨</p>
   </footer>
 
   <script>
