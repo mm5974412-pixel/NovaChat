@@ -1016,6 +1016,8 @@ html.light .theme-toggle:hover {
   }
   body.mobile-dialog-open .chat-main {
     display: flex;
+    min-height: 100vh;
+    height: 100vh;
   }
   .back-btn {
     display: none;
@@ -1045,7 +1047,7 @@ html.light .theme-toggle:hover {
     width: 100%;
     border-radius: 16px;
     padding: 10px 10px 12px;
-    min-height: 60vh;
+    min-height: 100vh;
   }
 
   .chat-main-header {
