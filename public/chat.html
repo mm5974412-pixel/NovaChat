@@ -91,7 +91,10 @@
       </div>
     </div>
     
-    <button id="theme-toggle" class="theme-toggle">🌙</button>
+    <div class="chat-main-actions">
+      <button id="delete-chat-btn" class="btn-ghost" style="display: none; margin-right: 8px;">🗑️ Удалить чат</button>
+      <button id="theme-toggle" class="theme-toggle">🌙</button>
+    </div>
   </div>
 </div>
 
@@ -816,3 +819,80 @@
       
       try {
         const res = await fetch(url, { method: 'POST' });
+        const data = await res.json();
+        
+        if (!data.ok) throw new Error(data.error);
+        
+        // Обновить статус кнопки
+        loadBlockStatus();
+        
+        // Обновить статус ввода
+        if (isBlocked) {
+          amBlockedInCurrentChat = false;
+        } else {
+          amBlockedInCurrentChat = true;
+        }
+        updateInputBlockedStatus();
+        
+        profileModal.classList.remove('show');
+      } catch (err) {
+        console.error('Ошибка блокировки:', err);
+        alert('Ошибка при блокировке пользователя');
+      }
+    });
+  }
+
+  // Кнопка удаления чата в профиле
+  if (profileDeleteChatBtn) {
+    profileDeleteChatBtn.addEventListener('click', () => {
+      if (!currentChatId) return;
+      
+      if (confirm('Вы уверены, что хотите удалить этот чат?')) {
+        // Закрываем профиль
+        profileModal.classList.remove('show');
+        
+        // Удаляем чат (используем ту же логику, что и основная кнопка)
+        fetch(`/chats/${currentChatId}`, {
+          method: 'DELETE',
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (!data.ok) {
+              alert(data.error || 'Не удалось удалить чат');
+              return;
+            }
+
+            // выходим из комнаты
+            socket.emit('leave-chat', currentChatId);
+
+            // сбрасываем состояние
+            currentChatId = null;
+            messagesDiv.innerHTML = '';
+
+            if (chatTitleEl) chatTitleEl.textContent = 'NovaChat';
+            if (chatSubtitleEl)
+              chatSubtitleEl.textContent =
+                'Создайте новый чат, чтобы начать переписку.';
+
+            if (deleteChatBtn) {
+              deleteChatBtn.style.display = 'none';
+            }
+
+            // на мобиле возвращаемся на список чатов
+            document.body.classList.remove('mobile-dialog-open');
+
+            // перезагружаем список чатов
+            loadChats();
+          })
+          .catch(() => {
+            alert('Ошибка сервера при удалении чата');
+          });
+      }
+    });
+  }
+
+  // Инициализация
+  loadChats();
+  updateEmptyState();
+  
+});
