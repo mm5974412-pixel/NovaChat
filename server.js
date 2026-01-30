@@ -90,6 +90,23 @@ async function initDb() {
     );
   `);
 
+  // Добавляем новые колонки если их нет (миграция)
+  await pool.query(`
+    ALTER TABLE messages 
+    ADD COLUMN IF NOT EXISTS file_url TEXT,
+    ADD COLUMN IF NOT EXISTS file_type TEXT,
+    ADD COLUMN IF NOT EXISTS file_name TEXT;
+  `).catch(() => {
+    // Игнорируем ошибки если колонки уже существуют
+  });
+
+  // Разрешаем NULL для текста (если это текстовое сообщение или файл без подписи)
+  await pool.query(`
+    ALTER TABLE messages ALTER COLUMN text DROP NOT NULL;
+  `).catch(() => {
+    // Игнорируем ошибки
+  });
+
   // 5. Блокировки пользователей
   await pool.query(`
     CREATE TABLE IF NOT EXISTS blocked_users (
