@@ -1048,6 +1048,8 @@ html.light .theme-toggle:hover {
     border-radius: 16px;
     padding: 10px 10px 12px;
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
   }
 
   .chat-main-header {
@@ -1091,11 +1093,16 @@ html.light .theme-toggle:hover {
   .chat-main-messages {
     padding-right: 0;
     max-height: 60vh;
+    flex: 1 1 auto;
   }
 
   .chat-main-input {
     gap: 8px;
     padding-top: 8px;
+    margin-top: auto;
+    position: sticky;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.98);
   }
 
   .chat-main-input input {
