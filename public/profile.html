@@ -140,6 +140,18 @@
     </div>
   </div>
 
+  <!-- Модальное окно уведомления (alert) -->
+  <div id="alert-modal" class="confirm-modal">
+    <div class="confirm-modal-backdrop"></div>
+    <div class="confirm-modal-content">
+      <div class="confirm-modal-title" id="alert-title"></div>
+      <div class="confirm-modal-message" id="alert-message"></div>
+      <div class="confirm-modal-buttons">
+        <button id="alert-ok" class="confirm-btn confirm-btn-ok confirm-btn-primary">ОК</button>
+      </div>
+    </div>
+  </div>
+
   <footer class="footer">
     <p>&copy; 2026 NovaChat — быстро, просто, красиво ✨</p>
   </footer>
@@ -184,6 +196,37 @@
       const handleKeyDown = (e) => {
         if (e.key === "Escape") {
           handleCancel();
+          document.removeEventListener("keydown", handleKeyDown);
+        }
+      };
+      document.addEventListener("keydown", handleKeyDown);
+    };
+
+    // Кастомная функция уведомления (alert)
+    window.showAlert = function(message, title = "Уведомление", okText = "ОК", type = "primary") {
+      const modal = document.getElementById("alert-modal");
+      const titleEl = document.getElementById("alert-title");
+      const messageEl = document.getElementById("alert-message");
+      const okBtn = document.getElementById("alert-ok");
+      
+      titleEl.textContent = title;
+      messageEl.textContent = message;
+      okBtn.textContent = okText;
+      okBtn.className = `confirm-btn confirm-btn-ok confirm-btn-${type}`;
+      
+      modal.classList.add("show");
+      
+      const handleOk = () => {
+        modal.classList.remove("show");
+        okBtn.removeEventListener("click", handleOk);
+      };
+      
+      okBtn.addEventListener("click", handleOk);
+      
+      // Закрытие по кнопке Escape
+      const handleKeyDown = (e) => {
+        if (e.key === "Escape") {
+          handleOk();
           document.removeEventListener("keydown", handleKeyDown);
         }
       };
@@ -259,11 +302,11 @@
               if (res.ok) {
                 window.location.href = '/login.html';
               } else {
-                alert('Ошибка при удалении аккаунта');
+                showAlert('Не удалось удалить аккаунт. Попробуйте позже.', 'Ошибка', 'ОК', 'danger');
               }
             })
             .catch(() => {
-              alert('Ошибка сервера');
+              showAlert('Произошла ошибка связи с сервером', 'Ошибка сервера', 'ОК', 'danger');
             });
           },
           null,
