@@ -956,18 +956,18 @@ html.light body {
 
   #theme-toggle {
     width: 100% !important;
-    height: 48px !important;
-    font-size: 18px !important;
-    padding: 8px !important;
+    height: 40px !important;
+    font-size: 16px !important;
+    padding: 6px !important;
   }
 
   #nexus-btn,
   #create-nexus-btn {
     width: 100% !important;
     max-width: 100% !important;
-    height: 48px !important;
-    padding: 8px !important;
-    font-size: 14px !important;
+    height: 40px !important;
+    padding: 6px !important;
+    font-size: 13px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -2488,18 +2488,19 @@ html.light .chat-last {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 16px;
+  padding: 12px 20px;
   border-radius: 10px;
   border: 1px solid rgba(139, 92, 246, 0.3);
   background: rgba(139, 92, 246, 0.05);
   color: #c7d2fe;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
   box-shadow: none;
+  width: 100%;
 }
 
 .theme-toggle:hover {

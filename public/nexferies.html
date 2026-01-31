@@ -178,18 +178,13 @@
         }
 
         const data = await response.json();
-        if (!data.loggedIn) {
-          window.location.href = '/login.html';
-          return;
-        }
-
-        currentUserId = data.id;
-        currentUsername = data.displayName || data.username;
+        currentUserId = data.user.id;
+        currentUsername = data.user.display_name || data.user.username;
 
         document.getElementById('current-username').textContent = currentUsername;
 
         // Проверяем админа
-        if (data.isAdmin) {
+        if (data.user.is_admin) {
           document.getElementById('admin-panel-btn').style.display = 'block';
         }
 
