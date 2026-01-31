@@ -10,6 +10,7 @@
     html {
       overflow: auto !important;
       height: auto !important;
+      scroll-behavior: smooth;
     }
 
     body {
@@ -125,31 +126,6 @@
       flex-direction: column;
       gap: 24px;
       max-width: 700px;
-      overflow-y: auto;
-      overflow-x: hidden;
-      min-height: 0;
-      scroll-behavior: smooth;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    /* Стилизация скроллбара */
-    .profile-main::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    .profile-main::-webkit-scrollbar-track {
-      background: rgba(107, 114, 128, 0.1);
-      border-radius: 10px;
-    }
-
-    .profile-main::-webkit-scrollbar-thumb {
-      background: rgba(139, 92, 246, 0.4);
-      border-radius: 10px;
-      transition: background 0.3s ease;
-    }
-
-    .profile-main::-webkit-scrollbar-thumb:hover {
-      background: rgba(139, 92, 246, 0.7);
     }
 
     .profile-card {
@@ -866,13 +842,12 @@
     const bioInput = document.getElementById("bio-input");
     const bioHint = document.getElementById("bio-hint");
 
-    const profileMainElement = document.querySelector('.profile-main');
     const scrollToTopBtn = document.getElementById('scroll-to-top-btn');
 
     // Показать/скрыть кнопку прокрутки вверх
-    if (profileMainElement && scrollToTopBtn) {
-      profileMainElement.addEventListener('scroll', () => {
-        if (profileMainElement.scrollTop > 300) {
+    if (scrollToTopBtn) {
+      window.addEventListener('scroll', () => {
+        if (window.pageYOffset > 300) {
           scrollToTopBtn.classList.add('show');
         } else {
           scrollToTopBtn.classList.remove('show');
@@ -880,7 +855,7 @@
       });
 
       scrollToTopBtn.addEventListener('click', () => {
-        profileMainElement.scrollTo({
+        window.scrollTo({
           top: 0,
           behavior: 'smooth'
         });
