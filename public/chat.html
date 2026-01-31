@@ -253,7 +253,27 @@
       <span style="font-size: 18px; margin-right: 8px;">✨</span>
       <span>Создать нексус</span>
     </button>
+    <button id="create-nexphere-option" class="create-menu-item">
+      <span style="font-size: 18px; margin-right: 8px;">🔗</span>
+      <span>Создать нексферу</span>
+    </button>
   </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно создания нексферы -->
+  <div id="create-nexphere-modal" class="confirm-modal" style="display: none;">
+    <div class="confirm-modal-backdrop"></div>
+    <div class="confirm-modal-content" style="max-width: 400px;">
+      <div class="confirm-modal-title">Создать нексферу</div>
+      <form id="create-nexphere-form" style="display: flex; flex-direction: column; gap: 10px;">
+        <input type="text" id="nexphere-create-name" placeholder="Название нексферы" required style="padding: 8px; border: 1px solid #666; border-radius: 8px; background: rgba(15,23,42,0.6); color: #e5e7eb;">
+        <div id="nexphere-create-error" style="color: #f87171; font-size: 12px;"></div>
+        <div class="confirm-modal-buttons">
+          <button type="button" id="nexphere-create-cancel" class="confirm-btn confirm-btn-cancel">Отмена</button>
+          <button type="submit" class="confirm-btn confirm-btn-ok">Создать</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -1075,24 +1095,28 @@
       fetch("/chats/list").then(res => res.json()),
       fetch("/api/nexus")
         .then(r => r.json())
-        .catch(() => ({ ok: true, nexus: [] }))
+        .catch(() => ({ ok: true, nexus: [] })),
+      fetch("/api/nexpheres")
+        .then(r => r.json())
+        .catch(() => ({ ok: true, nexpheres: [] }))
     ])
-      .then(([chatsData, nexusData]) => {
+      .then(([chatsData, nexusData, nexphereData]) => {
         if (!chatList) return;
         chatList.innerHTML = "";
 
         const chats = chatsData.ok ? chatsData.chats : [];
         const nexuses = nexusData.ok && nexusData.nexus ? nexusData.nexus : [];
-        const allItems = [...(chats || []), ...(nexuses || [])];
+        const nexpheres = nexphereData.ok && nexphereData.nexpheres ? nexphereData.nexpheres : [];
+        const allItems = [...(chats || []), ...(nexuses || []), ...(nexpheres || [])];
 
         if (allItems.length === 0) {
           const li = document.createElement("li");
           li.style.fontSize = "12px";
           li.style.color = "#6b7280";
           li.style.padding = "4px 2px";
-          li.textContent = "У вас пока нет чатов или нексусов.";
+          li.textContent = "У вас пока нет чатов, нексусов или нексфер.";
           chatList.appendChild(li);
-          if (!currentNexusView) {
+          if (!currentNexusView && !window.currentNexphereId) {
             if (chatTitleEl) chatTitleEl.textContent = "Nexora";
             if (chatSubtitleEl) chatSubtitleEl.textContent = "Создайте что-то новое!";
             messagesDiv.innerHTML = "";
@@ -1100,7 +1124,7 @@
           return;
         }
 
-        if (!currentChatId && !currentNexusView) {
+        if (!currentChatId && !currentNexusView && !window.currentNexphereId) {
           if (chatTitleEl) chatTitleEl.textContent = "Nexora";
           if (chatSubtitleEl) chatSubtitleEl.textContent = "Создайте что-то новое!";
         }
@@ -1148,6 +1172,10 @@
             if (currentChatId && currentChatId !== chat.id) {
               socket.emit("leave-chat", currentChatId);
             }
+            if (window.currentNexphereId) {
+              socket.emit("nexphere:leave", { nexphereId: window.currentNexphereId });
+              window.currentNexphereId = null;
+            }
             document.querySelectorAll(".chat-item").forEach((el) => el.classList.remove("chat-item-active"));
             li.classList.add("chat-item-active");
             openChat(chat);
@@ -1189,9 +1217,56 @@
           li.appendChild(meta);
 
           li.addEventListener("click", () => {
+            if (window.currentNexphereId) {
+              socket.emit("nexphere:leave", { nexphereId: window.currentNexphereId });
+              window.currentNexphereId = null;
+            }
             document.querySelectorAll(".chat-item").forEach((el) => el.classList.remove("chat-item-active"));
             li.classList.add("chat-item-active");
             openNexus(nexus);
+          });
+
+          chatList.appendChild(li);
+        });
+
+        // Добавляем нексферы
+        nexpheres.forEach((nexphere) => {
+          const li = document.createElement("li");
+          li.classList.add("chat-item");
+          li.dataset.nexphereId = nexphere.id;
+
+          const avatar = document.createElement("div");
+          avatar.classList.add("chat-avatar");
+          avatar.textContent = (nexphere.name || "N").charAt(0).toUpperCase();
+          avatar.style.backgroundColor = "#8b5cf6";
+
+          const meta = document.createElement("div");
+          meta.classList.add("chat-meta");
+
+          const name = document.createElement("div");
+          name.classList.add("chat-name");
+          name.textContent = nexphere.name;
+
+          const last = document.createElement("div");
+          last.classList.add("chat-last");
+          last.textContent = `🔗 Нексфера · ${nexphere.members_count} участников`;
+
+          meta.appendChild(name);
+          meta.appendChild(last);
+          li.appendChild(avatar);
+          li.appendChild(meta);
+
+          li.addEventListener("click", () => {
+            if (currentChatId) {
+              socket.emit("leave-chat", currentChatId);
+            }
+            if (currentNexusView) {
+              currentNexusView = null;
+            }
+            document.querySelectorAll(".chat-item").forEach((el) => el.classList.remove("chat-item-active"));
+            li.classList.add("chat-item-active");
+            openNexphere(nexphere);
+            updateFormForNexphere();
           });
 
           chatList.appendChild(li);
@@ -1642,6 +1717,179 @@
       });
   }
 
+  // ======= ФУНКЦИИ НЕКСФЕР =======
+
+  // Открыть нексферу
+  function openNexphere(nexphere) {
+    // Сбрасываем текущий чат и нексус
+    if (currentChatId) {
+      socket.emit("leave-chat", currentChatId);
+    }
+    if (currentNexusView) {
+      currentNexusView = null;
+    }
+
+    currentChatId = null;
+    currentPeerUserId = null;
+    currentPeerUsername = null;
+    currentNexusView = null;
+
+    // Устанавливаем текущую нексферу
+    window.currentNexphereId = nexphere.id;
+
+    // Обновляем интерфейс
+    if (chatTitleEl) {
+      chatTitleEl.textContent = nexphere.name;
+    }
+    if (chatSubtitleEl) {
+      chatSubtitleEl.textContent = `👥 Нексфера · ${nexphere.members_count} участников`;
+    }
+
+    // Очищаем область сообщений
+    messagesDiv.innerHTML = "";
+
+    // Присоединяемся к Socket.io комнате
+    socket.emit("nexphere:join", { nexphereId: nexphere.id });
+
+    // Загружаем сообщения
+    loadNexphereMessages(nexphere.id);
+
+    // На мобилке переключаемся в режим "диалога"
+    if (isMobile()) {
+      document.body.classList.add("mobile-dialog-open");
+    }
+  }
+
+  // Загрузить сообщения нексферы
+  function loadNexphereMessages(nexphereId) {
+    fetch(`/api/nexpheres/${nexphereId}/messages`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.ok) {
+          console.error("Ошибка при загрузке сообщений:", data.error);
+          return;
+        }
+
+        messagesDiv.innerHTML = "";
+
+        if (data.messages.length === 0) {
+          const emptyDiv = document.createElement("div");
+          emptyDiv.style.cssText = "text-align: center; color: #9ca3af; padding: 40px;";
+          emptyDiv.textContent = "В нексфере ещё нет сообщений";
+          messagesDiv.appendChild(emptyDiv);
+          return;
+        }
+
+        // Добавляем сообщения в порядке возрастания (старые снизу, новые сверху)
+        data.messages.forEach(msg => {
+          appendMessage({
+            id: msg.id,
+            author: msg.author,
+            text: msg.text || "",
+            fileUrl: msg.file_url,
+            fileType: msg.file_type,
+            fileName: msg.file_name,
+            sticker_id: msg.sticker_id,
+            time: msg.time
+          });
+        });
+
+        scrollMessagesToBottom();
+      })
+      .catch(err => {
+        console.error("Ошибка при загрузке сообщений:", err);
+      });
+  }
+
+  // Обновить интерфейс формы для нексферы
+  function updateFormForNexphere() {
+    if (!form || !window.currentNexphereId) return;
+
+    // Формируем новый обработчик отправки
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text && !window.selectedSticker) return;
+
+      const finalText = text;
+      const sticker = window.selectedSticker;
+      window.selectedSticker = null;
+
+      if (!window.currentNexphereId) {
+        showAlert("Выберите нексферу", "Ошибка", "ОК", "primary");
+        return;
+      }
+
+      // Отправляем через Socket.io для реалтайма
+      socket.emit("nexphere:send-message", {
+        nexphereId: window.currentNexphereId,
+        text: finalText,
+        sticker: sticker
+      });
+
+      input.value = "";
+      if (window.selectedSticker) {
+        window.selectedSticker = null;
+      }
+    };
+  }
+
+  // Socket.io обработчик для новых сообщений в нексфере
+  socket.on("nexphere:new-message", (msg) => {
+    // Проверяем, что это сообщение из текущей нексферы
+    if (msg.nexphereId !== window.currentNexphereId) {
+      return;
+    }
+
+    appendMessage({
+      id: msg.id,
+      author: msg.author,
+      text: msg.text || "",
+      sticker_id: msg.sticker,
+      time: msg.time
+    });
+
+    scrollMessagesToBottom();
+  });
+
+  // Socket.io обработчик обновления списка нексфер
+  socket.on("nexpheres:updated", () => {
+    loadChats();
+  });
+
+  // Socket.io обработчик выхода из нексферы
+  socket.on("nexphere:user-left", (data) => {
+    console.log(`Пользователь вышел из нексферы ${data.nexphereId}`);
+  });
+
+  // Создать новую нексферу
+  async function createNewNexphere(name) {
+    try {
+      const res = await fetch("/api/nexpheres", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name })
+      });
+
+      const data = await res.json();
+      
+      if (!data.ok) {
+        return { ok: false, error: data.error || "Ошибка при создании" };
+      }
+
+      // Обновляем список чатов
+      loadChats();
+
+      // Открываем новую нексферу
+      openNexphere(data.nexphere);
+
+      return { ok: true, nexphere: data.nexphere };
+    } catch (err) {
+      console.error("Ошибка при создании нексферы:", err);
+      return { ok: false, error: "Ошибка сервера" };
+    }
+  }
+
   // Socket.io для новых постов в реальном времени
   socket.on("nexus-post-new", (data) => {
     const postsContainer = messagesDiv.querySelector(`[data-nexus-posts="${data.nexusId}"]`);
@@ -1686,10 +1934,26 @@
     form.addEventListener("submit", (e) => {
       e.preventDefault();
       const text = input.value.trim();
-      if (!text) return;
+      if (!text && !window.selectedSticker) return;
 
       // Если мы в режиме нексуса, не проверяем currentChatId
       if (currentNexusView) {
+        return;
+      }
+
+      // Если мы в режиме нексферы
+      if (window.currentNexphereId) {
+        const finalText = text;
+        const sticker = window.selectedSticker;
+        window.selectedSticker = null;
+
+        socket.emit("nexphere:send-message", {
+          nexphereId: window.currentNexphereId,
+          text: finalText,
+          sticker: sticker
+        });
+
+        input.value = "";
         return;
       }
 
@@ -2834,8 +3098,8 @@
   // Открыть модальное окно со стикерами
   if (stickerBtn) {
     stickerBtn.addEventListener("click", () => {
-      if (!currentChatId) {
-        showAlert("Выберите чат или создайте новый", "Чат не выбран", "ОК", "primary");
+      if (!currentChatId && !window.currentNexphereId) {
+        showAlert("Выберите чат или нексферу", "Не выбрано", "ОК", "primary");
         return;
       }
       renderStickers();
@@ -2861,6 +3125,16 @@
 
   // Отправить стикер
   function sendSticker(stickerId) {
+    if (window.currentNexphereId) {
+      // Отправляем стикер в нексферу через Socket.io
+      socket.emit("nexphere:send-message", {
+        nexphereId: window.currentNexphereId,
+        text: "",
+        sticker: stickerId
+      });
+      return;
+    }
+
     if (!currentChatId) return;
 
     fetch(`/chats/${currentChatId}/messages`, {
@@ -3037,6 +3311,60 @@
       createNexusModalEl.style.display = "flex";
       nexusCreateFormEl.reset();
       nexusCreateErrorEl.textContent = "";
+    });
+  }
+
+  // Клик на "Создать нексферу"
+  const createNexphereOption = document.getElementById("create-nexphere-option");
+  const createNexphereModal = document.getElementById("create-nexphere-modal");
+  const createNexphereForm = document.getElementById("create-nexphere-form");
+  const createNexphereNameInput = document.getElementById("nexphere-create-name");
+  const createNexphereErrorDiv = document.getElementById("nexphere-create-error");
+  const createNexphereCancelBtn = document.getElementById("nexphere-create-cancel");
+
+  if (createNexphereOption) {
+    createNexphereOption.addEventListener("click", () => {
+      closeCreateMenu();
+      createNexphereModal.style.display = "flex";
+      createNexphereForm.reset();
+      createNexphereErrorDiv.textContent = "";
+      createNexphereNameInput?.focus();
+    });
+  }
+
+  if (createNexphereCancelBtn) {
+    createNexphereCancelBtn.addEventListener("click", () => {
+      createNexphereModal.style.display = "none";
+    });
+  }
+
+  if (createNexphereForm) {
+    createNexphereForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = createNexphereNameInput.value.trim();
+
+      if (!name) {
+        createNexphereErrorDiv.textContent = "Название обязательно";
+        return;
+      }
+
+      const submitBtn = createNexphereForm.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+
+      try {
+        const result = await createNewNexphere(name);
+        if (result.ok) {
+          createNexphereModal.style.display = "none";
+          showAlert(`Нексфера "${name}" создана! 🎉`, "Успех", "ОК", "success");
+        } else {
+          createNexphereErrorDiv.textContent = result.error || "Ошибка при создании";
+        }
+      } catch (err) {
+        console.error(err);
+        createNexphereErrorDiv.textContent = "Ошибка сервера";
+      } finally {
+        submitBtn.disabled = false;
+      }
     });
   }
 

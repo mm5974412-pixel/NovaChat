@@ -226,6 +226,96 @@ io.on("connection", (socket) => {
       console.error("Ошибка при отметке прочитанного:", err);
     }
   });
+
+  // ======= НЕКСФЕРЫ (Socket.io события) =======
+  // Пользователь присоединяется к нексфере
+  socket.on("nexphere:join", (data) => {
+    const { nexphereId } = data;
+    if (!nexphereId) return;
+    socket.join(`nexphere:${nexphereId}`);
+    console.log(`Socket ${socket.id} присоединился к нексфере ${nexphereId}`);
+  });
+
+  // Пользователь покидает нексферу
+  socket.on("nexphere:leave", (data) => {
+    const { nexphereId } = data;
+    if (!nexphereId) return;
+    socket.leave(`nexphere:${nexphereId}`);
+    console.log(`Socket ${socket.id} покинул нексферу ${nexphereId}`);
+  });
+
+  // Пользователь отправляет сообщение в нексферу
+  socket.on("nexphere:send-message", async (data) => {
+    try {
+      const { nexphereId, text, sticker } = data;
+      
+      if (!nexphereId || (!text?.trim() && !sticker)) {
+        return;
+      }
+
+      // Получаем userId из подключённых пользователей по socket.id
+      let userId = null;
+      for (const [uId, user] of onlineUsers.entries()) {
+        if (user.socketId === socket.id) {
+          userId = uId;
+          break;
+        }
+      }
+
+      if (!userId) {
+        console.error("Не удалось определить userId для сокета", socket.id);
+        return;
+      }
+
+      // Проверяем, что пользователь участник нексферы
+      const memberCheck = await pool.query(
+        "SELECT 1 FROM nexphere_members WHERE nexphere_id = $1 AND user_id = $2 LIMIT 1",
+        [nexphereId, userId]
+      );
+
+      if (memberCheck.rowCount === 0) {
+        console.error("Пользователь не участник нексферы", userId, nexphereId);
+        return;
+      }
+
+      // Получаем информацию об авторе
+      const userResult = await pool.query(
+        "SELECT username, display_name FROM users WHERE id = $1",
+        [userId]
+      );
+      const author = userResult.rows[0];
+      const authorUsername = author?.username || "Unknown";
+
+      // Сохраняем сообщение в БД
+      const insertResult = await pool.query(
+        `
+        INSERT INTO nexphere_messages (nexphere_id, author_id, text, sticker_id)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id, created_at
+        `,
+        [nexphereId, userId, text ? text.trim() : "", sticker || null]
+      );
+
+      const msg = insertResult.rows[0];
+
+      // Отправляем сообщение всем участникам нексферы
+      io.to(`nexphere:${nexphereId}`).emit("nexphere:new-message", {
+        id: msg.id,
+        nexphereId,
+        author: authorUsername,
+        text: text || "",
+        sticker: sticker || null,
+        time: new Date(msg.created_at).toLocaleTimeString("ru-RU", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      });
+
+      console.log(`Новое сообщение в нексфере ${nexphereId} от ${authorUsername}`);
+    } catch (err) {
+      console.error("Ошибка при отправке сообщения в нексферу:", err);
+    }
+  });
 });
 
 // Порт: локально 3000, на Render — тот, который он даёт
@@ -395,8 +485,43 @@ async function initDb() {
     );
   `);
 
+  // 8. Нексферы (групповые чаты)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS nexpheres (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
+  // Участники нексферы
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS nexphere_members (
+      nexphere_id INTEGER NOT NULL REFERENCES nexpheres(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      joined_at TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (nexphere_id, user_id)
+    );
+  `);
+
+  // Сообщения нексферы
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS nexphere_messages (
+      id SERIAL PRIMARY KEY,
+      nexphere_id INTEGER NOT NULL REFERENCES nexpheres(id) ON DELETE CASCADE,
+      author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      text TEXT,
+      file_url TEXT,
+      file_type TEXT,
+      file_name TEXT,
+      sticker_id VARCHAR(50),
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
   console.log(
-    "База данных инициализирована (users, chats, chat_members, messages, blocked_users, settings, nexus готовы)"
+    "База данных инициализирована (users, chats, chat_members, messages, blocked_users, settings, nexus, nexpheres готовы)"
   );
 }
 
@@ -1380,6 +1505,281 @@ app.patch("/api/nexus/:nexusId", requireAuth, upload.single("avatar"), async (re
     res.json({ ok: true, nexus: result.rows[0] });
   } catch (err) {
     console.error("Ошибка при обновлении нексуса:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// ======= НЕКСФЕРЫ API =======
+// Создание новой нексферы
+app.post("/api/nexpheres", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const name = (req.body.name || "").trim();
+
+    if (!name || name.length < 3) {
+      return res.status(400).json({ ok: false, error: "Название нексферы должно быть минимум 3 символа" });
+    }
+
+    if (name.length > 100) {
+      return res.status(400).json({ ok: false, error: "Название нексферы не должно быть больше 100 символов" });
+    }
+
+    // Создаём нексферу
+    const result = await pool.query(
+      "INSERT INTO nexpheres (name, owner_id) VALUES ($1, $2) RETURNING id, name, owner_id, created_at",
+      [name, userId]
+    );
+
+    const nexphere = result.rows[0];
+
+    // Добавляем владельца как первого участника
+    await pool.query(
+      "INSERT INTO nexphere_members (nexphere_id, user_id) VALUES ($1, $2)",
+      [nexphere.id, userId]
+    );
+
+    res.json({
+      ok: true,
+      nexphere: {
+        id: nexphere.id,
+        name: nexphere.name,
+        owner_id: nexphere.owner_id,
+        created_at: nexphere.created_at,
+        members_count: 1,
+      }
+    });
+  } catch (err) {
+    console.error("Ошибка при создании нексферы:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// Получить список всех нексфер пользователя
+app.get("/api/nexpheres", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+
+    const result = await pool.query(
+      `
+      SELECT
+        n.id,
+        n.name,
+        n.owner_id,
+        n.created_at,
+        u.username AS owner_username,
+        u.display_name AS owner_display_name,
+        COUNT(DISTINCT nm.user_id)::int AS members_count,
+        COUNT(DISTINCT nxm.id)::int AS messages_count
+      FROM nexpheres n
+      JOIN users u ON u.id = n.owner_id
+      JOIN nexphere_members nm ON nm.nexphere_id = n.id
+      LEFT JOIN nexphere_messages nxm ON nxm.nexphere_id = n.id
+      WHERE nm.user_id = $1
+      GROUP BY n.id, n.name, n.owner_id, n.created_at, u.username, u.display_name
+      ORDER BY n.created_at DESC
+      `,
+      [userId]
+    );
+
+    res.json({
+      ok: true,
+      nexpheres: result.rows
+    });
+  } catch (err) {
+    console.error("Ошибка при получении списка нексфер:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// Получить конкретную нексферу с информацией
+app.get("/api/nexpheres/:nexphereId", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const nexphereId = parseInt(req.params.nexphereId, 10);
+
+    // Проверяем, что пользователь участник
+    const memberCheck = await pool.query(
+      "SELECT 1 FROM nexphere_members WHERE nexphere_id = $1 AND user_id = $2 LIMIT 1",
+      [nexphereId, userId]
+    );
+
+    if (memberCheck.rowCount === 0) {
+      return res.status(403).json({ ok: false, error: "У вас нет доступа к этой нексфере" });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT
+        n.id,
+        n.name,
+        n.owner_id,
+        n.created_at,
+        u.username AS owner_username,
+        u.display_name AS owner_display_name,
+        COUNT(DISTINCT nm.user_id)::int AS members_count
+      FROM nexpheres n
+      JOIN users u ON u.id = n.owner_id
+      LEFT JOIN nexphere_members nm ON nm.nexphere_id = n.id
+      WHERE n.id = $1
+      GROUP BY n.id, n.name, n.owner_id, n.created_at, u.username, u.display_name
+      `,
+      [nexphereId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: "Нексфера не найдена" });
+    }
+
+    res.json({
+      ok: true,
+      nexphere: result.rows[0]
+    });
+  } catch (err) {
+    console.error("Ошибка при получении нексферы:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// Получить сообщения нексферы
+app.get("/api/nexpheres/:nexphereId/messages", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const nexphereId = parseInt(req.params.nexphereId, 10);
+
+    // Проверяем доступ
+    const memberCheck = await pool.query(
+      "SELECT 1 FROM nexphere_members WHERE nexphere_id = $1 AND user_id = $2 LIMIT 1",
+      [nexphereId, userId]
+    );
+
+    if (memberCheck.rowCount === 0) {
+      return res.status(403).json({ ok: false, error: "У вас нет доступа к этой нексфере" });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT
+        m.id,
+        m.nexphere_id,
+        u.username AS author,
+        u.display_name AS author_display_name,
+        m.text,
+        m.file_url,
+        m.file_type,
+        m.file_name,
+        m.sticker_id,
+        m.created_at,
+        to_char(m.created_at, 'HH24:MI') AS time
+      FROM nexphere_messages m
+      JOIN users u ON u.id = m.author_id
+      WHERE m.nexphere_id = $1
+      ORDER BY m.created_at ASC
+      LIMIT 500
+      `,
+      [nexphereId]
+    );
+
+    res.json({
+      ok: true,
+      messages: result.rows
+    });
+  } catch (err) {
+    console.error("Ошибка при получении сообщений нексферы:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// Добавить пользователя в нексферу
+app.post("/api/nexpheres/:nexphereId/members", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const nexphereId = parseInt(req.params.nexphereId, 10);
+    const targetUserId = parseInt(req.body.userId, 10);
+
+    if (!targetUserId) {
+      return res.status(400).json({ ok: false, error: "userId обязателен" });
+    }
+
+    // Проверяем, что запрос делает владелец нексферы
+    const ownerCheck = await pool.query(
+      "SELECT 1 FROM nexpheres WHERE id = $1 AND owner_id = $2 LIMIT 1",
+      [nexphereId, userId]
+    );
+
+    if (ownerCheck.rowCount === 0) {
+      return res.status(403).json({ ok: false, error: "Только владелец может добавлять участников" });
+    }
+
+    // Добавляем участника
+    await pool.query(
+      "INSERT INTO nexphere_members (nexphere_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+      [nexphereId, targetUserId]
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Ошибка при добавлении участника:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// Отправить сообщение в нексферу (HTTP API, альтернатива Socket.io)
+app.post("/api/nexpheres/:nexphereId/messages", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const nexphereId = parseInt(req.params.nexphereId, 10);
+    const { text, sticker } = req.body;
+
+    if (!text?.trim() && !sticker) {
+      return res.status(400).json({ ok: false, error: "Текст или стикер обязательны" });
+    }
+
+    // Проверяем доступ
+    const memberCheck = await pool.query(
+      "SELECT 1 FROM nexphere_members WHERE nexphere_id = $1 AND user_id = $2 LIMIT 1",
+      [nexphereId, userId]
+    );
+
+    if (memberCheck.rowCount === 0) {
+      return res.status(403).json({ ok: false, error: "У вас нет доступа к этой нексфере" });
+    }
+
+    // Получаем информацию об авторе
+    const userResult = await pool.query(
+      "SELECT username, display_name FROM users WHERE id = $1",
+      [userId]
+    );
+    const author = userResult.rows[0];
+
+    // Сохраняем сообщение
+    const insertResult = await pool.query(
+      `
+      INSERT INTO nexphere_messages (nexphere_id, author_id, text, sticker_id)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, created_at
+      `,
+      [nexphereId, userId, text ? text.trim() : "", sticker || null]
+    );
+
+    const msg = insertResult.rows[0];
+
+    // Отправляем через Socket.io
+    io.to(`nexphere:${nexphereId}`).emit("nexphere:new-message", {
+      id: msg.id,
+      nexphereId,
+      author: author.username,
+      author_display_name: author.display_name,
+      text: text || "",
+      sticker: sticker || null,
+      time: new Date(msg.created_at).toLocaleTimeString("ru-RU", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Ошибка при отправке сообщения в нексферу:", err);
     res.status(500).json({ ok: false, error: "Ошибка сервера" });
   }
 });
