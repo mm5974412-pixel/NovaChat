@@ -1654,7 +1654,7 @@ form input[type="password"]:focus {
 }
 
 .chat-main-subtitle {
-  font-size: 12px;
+  font-size: 14px;
   color: #9ca3af;
 }
 
@@ -2640,7 +2640,7 @@ html.light #delete-chat-btn:hover {
   }
 
   .chat-main-subtitle {
-    font-size: 13px;
+    font-size: 15px;
   }
 
   .chat-list {
@@ -2797,7 +2797,7 @@ html.light #delete-chat-btn:hover {
   }
 
   .chat-main-subtitle {
-    font-size: 12px;
+    font-size: 14px;
   }
 
   .message {
