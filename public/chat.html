@@ -584,6 +584,12 @@
       .then((data) => {
         if (!data) return;
         currentUser = data;
+        
+      // Сообщаем серверу, что этот userId сейчас онлайн
+      if (currentUser && currentUser.id) {
+        socket.emit("user-online", currentUser.id);
+      }
+
         const displayName = data.displayName || data.username;
         if (currentUsernameSpan) {
           currentUsernameSpan.textContent = displayName || "?";
