@@ -17,6 +17,10 @@ const io = new Server(server);
 // Глобальное хранилище подключённых пользователей
 const onlineUsers = new Map(); // { userId: { socketId, username, connectedAt } }
 
+// Глобальное хранилище статусов пользователей
+// { userId: { status: 'online'|'offline'|'typing'|'recording_voice'|'sending_photo'|'sending_video', statusData: { ...meta } } }
+const userStatuses = new Map();
+
 // ======= SOCKET.IO: комнаты для личных чатов =======
 io.on("connection", (socket) => {
   console.log("Socket connected", socket.id);
@@ -54,12 +58,143 @@ io.on("connection", (socket) => {
     for (const [userId, user] of onlineUsers.entries()) {
       if (user.socketId === socket.id) {
         onlineUsers.delete(userId);
+        // Установить статус offline и время last_seen
+        userStatuses.set(userId, {
+          status: 'offline',
+          lastSeen: new Date()
+        });
         console.log(`User ${userId} is offline. Total online: ${onlineUsers.size}`);
         io.emit("stats-update", {
           onlineUsers: onlineUsers.size
         });
+        io.emit("user-status-changed", {
+          userId,
+          status: 'offline',
+          lastSeen: new Date()
+        });
         break;
       }
+    }
+  });
+
+  // Пользователь печатает
+  socket.on("user-typing", (data) => {
+    const { userId, chatId } = data;
+    if (userId) {
+      userStatuses.set(userId, {
+        status: 'typing',
+        chatId,
+        timestamp: new Date()
+      });
+      io.emit("user-status-changed", {
+        userId,
+        status: 'typing',
+        statusText: '📝 Печатает...'
+      });
+      // Автоматически вернуть в онлайн через 3 секунды если нет нового события
+      setTimeout(() => {
+        if (userStatuses.get(userId)?.status === 'typing') {
+          userStatuses.set(userId, {
+            status: 'online',
+            timestamp: new Date()
+          });
+          io.emit("user-status-changed", {
+            userId,
+            status: 'online',
+            statusText: '✅ В сети'
+          });
+        }
+      }, 3000);
+    }
+  });
+
+  // Пользователь записывает голос
+  socket.on("user-recording-voice", (data) => {
+    const { userId } = data;
+    if (userId) {
+      userStatuses.set(userId, {
+        status: 'recording_voice',
+        timestamp: new Date()
+      });
+      io.emit("user-status-changed", {
+        userId,
+        status: 'recording_voice',
+        statusText: '🎤 Записывает голосовое сообщение...'
+      });
+    }
+  });
+
+  // Пользователь отправляет фото
+  socket.on("user-sending-photo", (data) => {
+    const { userId } = data;
+    if (userId) {
+      userStatuses.set(userId, {
+        status: 'sending_photo',
+        timestamp: new Date()
+      });
+      io.emit("user-status-changed", {
+        userId,
+        status: 'sending_photo',
+        statusText: '📸 Отправляет фото...'
+      });
+      setTimeout(() => {
+        if (userStatuses.get(userId)?.status === 'sending_photo') {
+          userStatuses.set(userId, {
+            status: 'online',
+            timestamp: new Date()
+          });
+          io.emit("user-status-changed", {
+            userId,
+            status: 'online',
+            statusText: '✅ В сети'
+          });
+        }
+      }, 2000);
+    }
+  });
+
+  // Пользователь отправляет видео
+  socket.on("user-sending-video", (data) => {
+    const { userId } = data;
+    if (userId) {
+      userStatuses.set(userId, {
+        status: 'sending_video',
+        timestamp: new Date()
+      });
+      io.emit("user-status-changed", {
+        userId,
+        status: 'sending_video',
+        statusText: '🎥 Отправляет видео...'
+      });
+      setTimeout(() => {
+        if (userStatuses.get(userId)?.status === 'sending_video') {
+          userStatuses.set(userId, {
+            status: 'online',
+            timestamp: new Date()
+          });
+          io.emit("user-status-changed", {
+            userId,
+            status: 'online',
+            statusText: '✅ В сети'
+          });
+        }
+      }, 3000);
+    }
+  });
+
+  // Пользователь вернулся в онлайн
+  socket.on("user-back-online", (data) => {
+    const { userId } = data;
+    if (userId) {
+      userStatuses.set(userId, {
+        status: 'online',
+        timestamp: new Date()
+      });
+      io.emit("user-status-changed", {
+        userId,
+        status: 'online',
+        statusText: '✅ В сети'
+      });
     }
   });
 });
@@ -101,7 +236,9 @@ async function initDb() {
     ADD COLUMN IF NOT EXISTS avatar_data TEXT,
     ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW(),
     ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE,
-    ADD COLUMN IF NOT EXISTS bio TEXT;
+    ADD COLUMN IF NOT EXISTS bio TEXT,
+    ADD COLUMN IF NOT EXISTS last_seen TIMESTAMPTZ DEFAULT NOW(),
+    ADD COLUMN IF NOT EXISTS current_status TEXT DEFAULT 'offline';
   `).catch(() => {
     // Игнорируем ошибки если колонки уже существуют
   });
@@ -1297,20 +1434,62 @@ app.get("/admin/stats", checkAdmin, async (req, res) => {
 app.get("/admin/users", checkAdmin, async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT id, username, email, is_admin, created_at 
+      SELECT id, username, email, is_admin, created_at, last_seen
       FROM users 
       ORDER BY created_at DESC 
       LIMIT 100
     `);
     
-    res.json(result.rows.map(u => ({
-      id: u.id,
-      username: u.username,
-      email: u.email,
-      is_admin: u.is_admin,
-      online: onlineUsers.has(u.id),
-      created_at: u.created_at
-    })));
+    res.json(result.rows.map(u => {
+      const userStatus = userStatuses.get(u.id);
+      let statusText = '❌ Не в сети';
+      let statusDetail = '';
+      
+      if (onlineUsers.has(u.id)) {
+        if (userStatus?.status === 'typing') {
+          statusText = '📝 Печатает...';
+        } else if (userStatus?.status === 'recording_voice') {
+          statusText = '🎤 Записывает голосовое сообщение...';
+        } else if (userStatus?.status === 'sending_photo') {
+          statusText = '📸 Отправляет фото...';
+        } else if (userStatus?.status === 'sending_video') {
+          statusText = '🎥 Отправляет видео...';
+        } else {
+          statusText = '✅ В сети';
+        }
+      } else if (u.last_seen) {
+        const lastSeenDate = new Date(u.last_seen);
+        const now = new Date();
+        const diffMs = now - lastSeenDate;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+        
+        if (diffMins < 1) {
+          statusDetail = 'только что';
+        } else if (diffMins < 60) {
+          statusDetail = `${diffMins} мин назад`;
+        } else if (diffHours < 24) {
+          statusDetail = `${diffHours} ч назад`;
+        } else if (diffDays < 7) {
+          statusDetail = `${diffDays} д назад`;
+        } else {
+          statusDetail = lastSeenDate.toLocaleDateString('ru-RU');
+        }
+        statusText = `был в сети ${statusDetail}`;
+      }
+      
+      return {
+        id: u.id,
+        username: u.username,
+        email: u.email,
+        is_admin: u.is_admin,
+        online: onlineUsers.has(u.id),
+        status: statusText,
+        created_at: u.created_at,
+        last_seen: u.last_seen
+      };
+    }));
   } catch (err) {
     console.error("Users fetch error:", err);
     res.status(500).json({ ok: false, error: "Server error" });

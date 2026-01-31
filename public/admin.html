@@ -326,6 +326,26 @@
       color: #64748b;
     }
 
+    .badge-typing {
+      background: #dbeafe;
+      color: #0369a1;
+    }
+
+    .badge-recording {
+      background: #fecaca;
+      color: #991b1b;
+    }
+
+    .badge-photo {
+      background: #fed7aa;
+      color: #9a3412;
+    }
+
+    .badge-video {
+      background: #e9d5ff;
+      color: #6b21a8;
+    }
+
     /* Modal */
     .modal {
       display: none;
@@ -832,6 +852,23 @@
       const currentSection = document.querySelector('.nav-btn.active')?.dataset.section;
       if (currentSection === 'messages') loadMessages();
     });
+
+    // Слушать обновления статусов пользователей в реальном времени
+    socket.on('user-status-changed', (data) => {
+      const currentSection = document.querySelector('.nav-btn.active')?.dataset.section;
+      if (currentSection === 'users') {
+        // Обновить только строку с этим пользователем
+        const table = document.getElementById('users-table');
+        const rows = table.querySelectorAll('tr');
+        rows.forEach(row => {
+          const userId = row.querySelector('td')?.textContent;
+          if (parseInt(userId) === data.userId) {
+            // Перезагрузить весь список для актуального отображения
+            loadUsers();
+          }
+        });
+      }
+    });
     
     // Проверить сессию при загрузке страницы
     async function checkSessionOnLoad() {
@@ -995,13 +1032,29 @@
 
           (Array.isArray(users) ? users : users.users || []).forEach(user => {
             const role = user.is_admin ? '<span class="badge badge-admin">🔐 Admin</span>' : '<span class="badge badge-user">👤 User</span>';
-            const status = user.online ? '<span class="badge badge-online">🟢 Online</span>' : '<span class="badge badge-offline">⚪ Offline</span>';
+            
+            // Динамический статус в зависимости от текста
+            let statusBadge = '<span class="badge badge-offline">❌ Не в сети</span>';
+            if (user.status.includes('В сети')) {
+              statusBadge = '<span class="badge badge-online">✅ В сети</span>';
+            } else if (user.status.includes('Печатает')) {
+              statusBadge = '<span class="badge badge-typing">📝 Печатает...</span>';
+            } else if (user.status.includes('Записывает')) {
+              statusBadge = '<span class="badge badge-recording">🎤 Записывает...</span>';
+            } else if (user.status.includes('Отправляет фото')) {
+              statusBadge = '<span class="badge badge-photo">📸 Отправляет фото...</span>';
+            } else if (user.status.includes('Отправляет видео')) {
+              statusBadge = '<span class="badge badge-video">🎥 Отправляет видео...</span>';
+            } else if (user.status.includes('был в сети')) {
+              statusBadge = '<span class="badge badge-offline">' + user.status + '</span>';
+            }
+            
             const row = document.createElement('tr');
             row.innerHTML = `
               <td>${user.id}</td>
               <td><strong>${user.username}</strong></td>
               <td>${user.email || '-'}</td>
-              <td>${status}</td>
+              <td>${statusBadge}</td>
               <td>${role}</td>
               <td>${new Date(user.created_at).toLocaleDateString('ru-RU')}</td>
               <td>
