@@ -1741,30 +1741,35 @@ document.addEventListener('DOMContentLoaded', function() {
       setTimeout(() => {
         const menuWidth = contextContent.offsetWidth || 220;
         const menuHeight = contextContent.offsetHeight || 300;
-        const padding = 20; // отступ от краев экрана
+        const padding = 15; // отступ от краев экрана
         
         let x = event.clientX + 10; // небольшой отступ от курсора
         let y = event.clientY + 10;
         
         // Проверяем, не выходит ли меню за правую границу
-        if (x + menuWidth > window.innerWidth - padding) {
-          x = event.clientX - menuWidth - 10;
+        if (x + menuWidth + padding > window.innerWidth) {
+          x = Math.max(padding, event.clientX - menuWidth - 10);
         }
         
         // Проверяем, не выходит ли меню за нижнюю границу
-        if (y + menuHeight > window.innerHeight - padding) {
-          y = event.clientY - menuHeight - 10;
+        if (y + menuHeight + padding > window.innerHeight) {
+          y = Math.max(padding, event.clientY - menuHeight - 10);
         }
         
-        // Не даем уйти за левую границу
-        if (x < padding) x = padding;
+        // Убедимся что x не выходит за левую границу
+        if (x < padding) {
+          x = padding;
+        }
         
-        // Не даем уйти за верхнюю границу
-        if (y < padding) y = padding;
+        // Убедимся что x не выходит за правую границу
+        if (x + menuWidth + padding > window.innerWidth) {
+          x = Math.max(padding, window.innerWidth - menuWidth - padding);
+        }
         
-        // Убедимся что не выходим за нижнюю границу
-        if (y + menuHeight > window.innerHeight - padding) {
-          y = window.innerHeight - menuHeight - padding;
+        // Финальная проверка y - не даем уйти за нижнюю границу вообще
+        const maxY = window.innerHeight - menuHeight - padding;
+        if (y > maxY) {
+          y = Math.max(padding, maxY);
         }
         
         // Устанавливаем позицию
