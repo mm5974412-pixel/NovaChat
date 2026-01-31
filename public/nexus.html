@@ -150,6 +150,7 @@
 
         const nexus = data.nexus;
         const authorName = nexus.author_display_name || nexus.author_username;
+        const isOwner = nexus.my_role === 'owner';
         
         const isMobile = window.innerWidth <= 768;
         let html = `
@@ -162,11 +163,61 @@
               <p class="nexus-modal-desc">${nexus.description || 'Без описания'}</p>
             </div>
           </div>
-          <div class="nexus-modal-posts" id="nexus-modal-posts">Загрузка постов...</div>
         `;
+
+        // Форма для добавления поста (только для владельца)
+        if (isOwner) {
+          html += `
+            <div class="nexus-post-form">
+              <h3>✨ Новый пост</h3>
+              <textarea id="nexus-modal-post-text" rows="4" placeholder="Напишите пост..." class="nexus-modal-textarea"></textarea>
+              <button id="nexus-modal-post-submit" class="btn-primary">📤 Опубликовать</button>
+              <div id="nexus-modal-post-error" class="nexus-error"></div>
+            </div>
+          `;
+        }
+
+        html += `<div class="nexus-modal-posts" id="nexus-modal-posts">Загрузка постов...</div>`;
 
         nexusModalBody.innerHTML = html;
         await loadNexusPostsInModal(nexusId);
+
+        // Обработчик отправки поста в модальном окне (только если владелец)
+        if (isOwner) {
+          const submitBtn = document.getElementById('nexus-modal-post-submit');
+          const textEl = document.getElementById('nexus-modal-post-text');
+          const errorEl = document.getElementById('nexus-modal-post-error');
+
+          submitBtn.addEventListener('click', async () => {
+            errorEl.textContent = '';
+            const text = textEl.value.trim();
+            if (!text) {
+              errorEl.textContent = 'Введите текст поста.';
+              return;
+            }
+
+            submitBtn.disabled = true;
+            try {
+              const res = await fetch(`/api/nexus/${nexusId}/posts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+              });
+              const data = await res.json();
+              if (!data.ok) {
+                errorEl.textContent = data.error || 'Не удалось создать пост';
+              } else {
+                textEl.value = '';
+                await loadNexusPostsInModal(nexusId);
+              }
+            } catch (err) {
+              errorEl.textContent = 'Ошибка при отправке';
+              console.error(err);
+            } finally {
+              submitBtn.disabled = false;
+            }
+          });
+        }
       } catch (err) {
         console.error(err);
         nexusModalBody.innerHTML = '<div class="nexus-error">Ошибка при загрузке нексуса</div>';
@@ -395,6 +446,7 @@
       fileNameEl.textContent = '';
       fileNameEl.classList.remove('nexus-file-selected');
       nexusErrorEl.textContent = '';
+      document.querySelector('.nexus-form-card').scrollIntoView({ behavior: 'smooth' });
     });
 
     // Отображение имени загруженного файла

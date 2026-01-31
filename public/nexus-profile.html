@@ -268,8 +268,10 @@
 
       const canComment = Boolean(currentNexus.my_role);
 
+      let input; // Сохраняем ссылку на input вне области видимости условия
+
       if (canComment) {
-        const input = document.createElement('input');
+        input = document.createElement('input');
         input.type = 'text';
         input.placeholder = 'Комментарий...';
         input.required = true;
@@ -287,16 +289,24 @@
           const textValue = input.value.trim();
           if (!textValue) return;
           submit.disabled = true;
-          const res = await fetch(`/api/nexus/posts/${post.id}/comments`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: textValue })
-          });
-          const data = await res.json();
-          submit.disabled = false;
-          if (data.ok) {
-            input.value = '';
-            await loadComments(post.id, commentsList);
+          try {
+            const res = await fetch(`/api/nexus/posts/${post.id}/comments`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: textValue })
+            });
+            const data = await res.json();
+            if (data.ok) {
+              input.value = '';
+              await loadComments(post.id, commentsList);
+            } else {
+              alert(data.error || 'Ошибка при добавлении комментария');
+            }
+          } catch (err) {
+            console.error('Ошибка:', err);
+            alert('Ошибка при отправке комментария');
+          } finally {
+            submit.disabled = false;
           }
         });
       } else {
