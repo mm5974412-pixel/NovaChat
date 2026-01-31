@@ -137,6 +137,16 @@
     </div>
   </div>
 
+  <!-- Контекстное меню сообщения для мобильных -->
+  <div id="message-context-menu" class="message-context-menu">
+    <div class="message-context-content">
+      <button class="message-context-item" data-action="delete">
+        <span>🗑️</span>
+        <span>Удалить</span>
+      </button>
+    </div>
+  </div>
+
   <!-- Модальное окно ввода (prompt) -->
   <div id="prompt-modal" class="confirm-modal">
     <div class="confirm-modal-backdrop"></div>
@@ -526,6 +536,25 @@ document.addEventListener('DOMContentLoaded', function() {
       });
 
       el.appendChild(delBtn);
+    }
+
+    // Добавляем обработчик долгого нажатия для мобильных
+    if (isMe && msg.id) {
+      let longPressTimer;
+      
+      el.addEventListener("touchstart", () => {
+        longPressTimer = setTimeout(() => {
+          showMessageContextMenu(msg.id, currentChatId);
+        }, 500); // 500ms долгое нажатие
+      });
+      
+      el.addEventListener("touchend", () => {
+        clearTimeout(longPressTimer);
+      });
+      
+      el.addEventListener("touchmove", () => {
+        clearTimeout(longPressTimer);
+      });
     }
 
     messagesDiv.appendChild(el);
@@ -1418,6 +1447,57 @@ document.addEventListener('DOMContentLoaded', function() {
       );
     });
   }
+
+  // Показать контекстное меню сообщения
+  function showMessageContextMenu(messageId, chatId) {
+    const contextMenu = document.getElementById('message-context-menu');
+    const deleteBtn = contextMenu.querySelector('[data-action="delete"]');
+    
+    // Удаляем старые обработчики
+    const newDeleteBtn = deleteBtn.cloneNode(true);
+    deleteBtn.replaceWith(newDeleteBtn);
+    
+    // Добавляем новый обработчик
+    newDeleteBtn.addEventListener('click', () => {
+      contextMenu.classList.remove('show');
+      
+      if (!chatId) return;
+      showConfirm(
+        "Сообщение будет удалено безвозвратно",
+        "Удалить сообщение?",
+        () => {
+          fetch(`/chats/${chatId}/messages/${messageId}`, {
+            method: "DELETE",
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              if (!data.ok) {
+                showAlert(data.error || "Не удалось удалить сообщение", "Ошибка", "ОК", "danger");
+              }
+            })
+            .catch(() => {
+              showAlert("Произошла ошибка при удалении сообщения", "Ошибка сервера", "ОК", "danger");
+            });
+        },
+        null,
+        "Удалить",
+        "Отмена",
+        "danger"
+      );
+    });
+    
+    contextMenu.classList.add('show');
+  }
+  
+  // Закрыть контекстное меню при клике на фон
+  document.addEventListener('DOMContentLoaded', () => {
+    const contextMenu = document.getElementById('message-context-menu');
+    contextMenu?.addEventListener('click', (e) => {
+      if (e.target === contextMenu) {
+        contextMenu.classList.remove('show');
+      }
+    });
+  });
 
   // Инициализация
   loadCurrentUser().then(() => {

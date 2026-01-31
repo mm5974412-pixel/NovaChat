@@ -1531,13 +1531,11 @@ html.light .chat-main-messages::-webkit-scrollbar-thumb {
 /* На мобильных - кнопка всегда видна */
 @media (max-width: 768px) {
   .msg-delete-btn {
-    opacity: 1;
-    transform: scale(1);
+    display: none;
   }
   
   .message:hover .msg-delete-btn {
-    opacity: 1;
-    transform: scale(1);
+    display: none;
   }
 }
 
@@ -2063,4 +2061,81 @@ html.light #delete-chat-btn:hover {
     min-width: 96vw;
     padding: 14px 4vw;
   }
+}
+
+/* ===== Контекстное меню сообщения для мобильных ===== */
+.message-context-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.message-context-menu.show {
+  display: flex;
+}
+
+.message-context-content {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  border-radius: 16px;
+  padding: 12px 0;
+  min-width: 200px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(107, 114, 128, 0.2);
+  animation: popIn 0.2s ease-out;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.message-context-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  color: #e5e7eb;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  width: 100%;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.message-context-item:hover {
+  background: rgba(139, 92, 246, 0.1);
+  color: #c7d2fe;
+}
+
+.message-context-item:active {
+  background: rgba(139, 92, 246, 0.2);
+}
+
+.message-context-item.danger {
+  color: #fca5a5;
+}
+
+.message-context-item.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.message-context-item.danger:active {
+  background: rgba(239, 68, 68, 0.2);
 }
