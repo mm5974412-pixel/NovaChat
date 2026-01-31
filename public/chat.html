@@ -1923,6 +1923,12 @@
       return;
     }
 
+    // Удаляем надпись "В нексфере ещё нет сообщений"
+    const emptyDiv = messagesDiv.querySelector('div[style*="text-align: center"]');
+    if (emptyDiv && emptyDiv.textContent.includes("В нексфере ещё нет сообщений")) {
+      emptyDiv.remove();
+    }
+
     appendMessage({
       id: msg.id,
       author: msg.author,
