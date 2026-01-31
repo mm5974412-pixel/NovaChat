@@ -9,6 +9,7 @@ const bcrypt = require("bcryptjs");
 const { Pool } = require("pg");
 const multer = require("multer");
 const fs = require("fs");
+const rateLimit = require("express-rate-limit");
 
 const app = express();
 const server = http.createServer(app);
@@ -213,6 +214,53 @@ io.on("connection", (socket) => {
       });
     }
   });
+
+  // ===== ENHANCED SOCKET.IO EVENTS ДЛЯ НЕКСФЕР =====
+
+  // Пользователь печатает в нексфере
+  socket.on("nexfery:typing", (data) => {
+    const { nexferyId, userId, isTyping } = data;
+    if (nexferyId) {
+      socket.to(`nexfery:${nexferyId}`).emit("user:typing", {
+        userId,
+        isTyping
+      });
+    }
+  });
+
+  // Online status в нексфере
+  socket.on("nexfery:user-status", (data) => {
+    const { nexferyId, userId, status } = data;
+    if (nexferyId) {
+      socket.to(`nexfery:${nexferyId}`).emit("member:status-changed", {
+        userId,
+        status,
+        timestamp: new Date()
+      });
+    }
+  });
+
+  // Подтверждение прочитанного
+  socket.on("message:mark-read", async (data) => {
+    try {
+      const { messageId, userId } = data;
+      
+      // Можно сохранить в БД для истории
+      // await pool.query(
+      //   `INSERT INTO message_read_receipts (message_id, user_id)
+      //    VALUES ($1, $2)
+      //    ON CONFLICT DO NOTHING`,
+      //   [messageId, userId]
+      // );
+
+      socket.broadcast.emit("message:read-receipt", {
+        messageId,
+        userId
+      });
+    } catch (err) {
+      console.error("Ошибка при отметке прочитанного:", err);
+    }
+  });
 });
 
 // Порт: локально 3000, на Render — тот, который он даёт
@@ -415,8 +463,78 @@ async function initDb() {
       file_url TEXT,
       file_type TEXT,
       file_name TEXT,
+      is_edited BOOLEAN DEFAULT FALSE,
+      edited_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
+  `);
+
+  // Таблица для приглашений в нексферы
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS nexfery_invites (
+      id SERIAL PRIMARY KEY,
+      nexfery_id INTEGER NOT NULL REFERENCES nexferies(id) ON DELETE CASCADE,
+      invited_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      invited_by_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      status VARCHAR(20) DEFAULT 'pending',
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      expires_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP + INTERVAL '7 days',
+      UNIQUE(nexfery_id, invited_user_id)
+    );
+  `);
+
+  // Таблица для реакций на сообщения
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS message_reactions (
+      id SERIAL PRIMARY KEY,
+      message_id INTEGER NOT NULL REFERENCES nexferies_messages(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      emoji VARCHAR(10) NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(message_id, user_id, emoji)
+    );
+  `);
+
+  // Таблица для отметок "прочитано"
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS message_read_receipts (
+      id SERIAL PRIMARY KEY,
+      message_id INTEGER NOT NULL REFERENCES nexferies_messages(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      read_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(message_id, user_id)
+    );
+  `);
+
+  // Индексы для оптимизации
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_messages_nexfery 
+    ON nexferies_messages(nexfery_id);
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_messages_created 
+    ON nexferies_messages(created_at DESC);
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_members_nexfery 
+    ON nexferies_members(nexfery_id);
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_members_user 
+    ON nexferies_members(user_id);
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_invites_user 
+    ON nexfery_invites(invited_user_id);
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_reactions_message 
+    ON message_reactions(message_id);
   `);
 
   console.log(
@@ -431,6 +549,23 @@ initDb().catch((err) => {
 // Чтобы читать данные из форм
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+// ======= RATE LIMITERS =======
+const messageLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 минута
+  max: 20, // макс 20 сообщений в минуту
+  message: "Слишком много сообщений, подождите",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const generalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 минут
+  max: 100, // макс 100 запросов за 15 минут
+  message: "Слишком много запросов, попробуйте позже",
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Сессии: теперь в Postgres, а не в памяти
 app.use(
@@ -2311,11 +2446,13 @@ app.post("/api/nexferies/:nexferyId/leave", requireAuth, async (req, res) => {
   }
 });
 
-// Получить сообщения нексферы
+// Получить сообщения нексферы (с pagination и реакциями)
 app.get("/api/nexferies/:nexferyId/messages", requireAuth, async (req, res) => {
   try {
     const userId = req.session.user.id;
     const nexferyId = parseInt(req.params.nexferyId, 10);
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100); // макс 100
+    const offset = parseInt(req.query.offset) || 0;
 
     // Проверяем, что пользователь член нексферы
     const memberCheck = await pool.query(
@@ -2327,30 +2464,66 @@ app.get("/api/nexferies/:nexferyId/messages", requireAuth, async (req, res) => {
       return res.status(403).json({ ok: false, error: "Вы не член этой нексферы" });
     }
 
+    // Получаем общее количество сообщений
+    const countResult = await pool.query(
+      "SELECT COUNT(*) as total FROM nexferies_messages WHERE nexfery_id = $1",
+      [nexferyId]
+    );
+    const total = parseInt(countResult.rows[0].total);
+
+    // Получаем сообщения с JOIN для оптимизации
     const result = await pool.query(
       `
       SELECT 
         m.id, m.text, m.file_url, m.file_type, m.file_name, m.created_at,
-        u.username, u.display_name, u.avatar_data
+        m.is_edited, m.edited_at, m.author_id,
+        u.username, u.display_name, u.avatar_data,
+        array_agg(json_build_object('emoji', r.emoji, 'count', r.reaction_count) ORDER BY r.emoji) FILTER (WHERE r.emoji IS NOT NULL) as reactions
       FROM nexferies_messages m
       JOIN users u ON m.author_id = u.id
+      LEFT JOIN (
+        SELECT message_id, emoji, COUNT(*) as reaction_count
+        FROM message_reactions
+        GROUP BY message_id, emoji
+      ) r ON m.id = r.message_id
       WHERE m.nexfery_id = $1
+      GROUP BY m.id, u.username, u.display_name, u.avatar_data
       ORDER BY m.created_at DESC
-      LIMIT 100
+      LIMIT $2 OFFSET $3
       `,
-      [nexferyId]
+      [nexferyId, limit, offset]
     );
 
-    res.json({ ok: true, messages: result.rows.map(row => ({
+    // Трансформируем результаты
+    const messages = result.rows.map(row => ({
       id: row.id,
       text: row.text,
       fileUrl: row.file_url,
       fileType: row.file_type,
       fileName: row.file_name,
       author: row.display_name || row.username,
+      authorId: row.author_id,
       authorAvatar: row.avatar_data,
-      createdAt: row.created_at
-    })).reverse() });
+      createdAt: row.created_at,
+      isEdited: row.is_edited,
+      editedAt: row.edited_at,
+      reactions: (row.reactions || []).reduce((acc, r) => {
+        if (r.emoji) acc[r.emoji] = r.count;
+        return acc;
+      }, {}),
+      isOwnMessage: row.author_id === userId
+    })).reverse();
+
+    res.json({ 
+      ok: true, 
+      messages: messages,
+      pagination: {
+        limit,
+        offset,
+        total,
+        hasMore: offset + limit < total
+      }
+    });
   } catch (err) {
     console.error("Ошибка при получении сообщений нексферы:", err);
     res.status(500).json({ ok: false, error: "Ошибка сервера" });
@@ -2358,7 +2531,7 @@ app.get("/api/nexferies/:nexferyId/messages", requireAuth, async (req, res) => {
 });
 
 // Отправить сообщение в нексферу
-app.post("/api/nexferies/:nexferyId/messages", requireAuth, async (req, res) => {
+app.post("/api/nexferies/:nexferyId/messages", requireAuth, messageLimiter, async (req, res) => {
   try {
     const userId = req.session.user.id;
     const nexferyId = parseInt(req.params.nexferyId, 10);
@@ -2404,7 +2577,10 @@ app.post("/api/nexferies/:nexferyId/messages", requireAuth, async (req, res) => 
       author: author.display_name || author.username,
       authorId: userId,
       authorAvatar: author.avatar_data,
-      createdAt: message.created_at
+      createdAt: message.created_at,
+      isEdited: false,
+      reactions: {},
+      isOwnMessage: true
     };
 
     // Отправляем сообщение по сокету
@@ -2447,7 +2623,367 @@ app.get("/api/nexferies/:nexferyId/members", requireAuth, async (req, res) => {
   }
 });
 
-// ======= ПОЛУЧЕНИЕ ИНФОРМАЦИИ О ПОЛЬЗОВАТЕЛЕ =======
+// ===== РЕДАКТИРОВАНИЕ СООБЩЕНИЯ =====
+app.patch("/api/nexferies/:nexferyId/messages/:messageId", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const messageId = parseInt(req.params.messageId);
+    const { text } = req.body;
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ ok: false, error: "Текст не может быть пустым" });
+    }
+
+    // Проверяем что это сообщение пользователя
+    const msgResult = await pool.query(
+      "SELECT author_id, nexfery_id FROM nexferies_messages WHERE id = $1",
+      [messageId]
+    );
+
+    if (msgResult.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: "Сообщение не найдено" });
+    }
+
+    const msg = msgResult.rows[0];
+    if (msg.author_id !== userId) {
+      return res.status(403).json({ ok: false, error: "Вы не автор сообщения" });
+    }
+
+    // Обновляем сообщение
+    await pool.query(
+      `UPDATE nexferies_messages 
+       SET text = $1, is_edited = true, edited_at = NOW()
+       WHERE id = $2`,
+      [text.trim(), messageId]
+    );
+
+    // Уведомляем
+    io.to(`nexfery:${msg.nexfery_id}`).emit("message:edited", {
+      messageId,
+      text: text.trim(),
+      editedAt: new Date()
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Ошибка при редактировании сообщения:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// ===== УДАЛЕНИЕ СООБЩЕНИЯ =====
+app.delete("/api/nexferies/:nexferyId/messages/:messageId", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const messageId = parseInt(req.params.messageId);
+    const nexferyId = parseInt(req.params.nexferyId);
+
+    // Проверяем что это сообщение пользователя или он админ нексферы
+    const msgResult = await pool.query(
+      "SELECT author_id FROM nexferies_messages WHERE id = $1",
+      [messageId]
+    );
+
+    if (msgResult.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: "Сообщение не найдено" });
+    }
+
+    const msg = msgResult.rows[0];
+    
+    // Проверяем права
+    const roleResult = await pool.query(
+      "SELECT role FROM nexferies_members WHERE nexfery_id = $1 AND user_id = $2",
+      [nexferyId, userId]
+    );
+
+    if (msg.author_id !== userId && roleResult.rows[0]?.role !== 'owner') {
+      return res.status(403).json({ ok: false, error: "Недостаточно прав" });
+    }
+
+    // Удаляем сообщение
+    await pool.query("DELETE FROM nexferies_messages WHERE id = $1", [messageId]);
+
+    // Уведомляем
+    io.to(`nexfery:${nexferyId}`).emit("message:deleted", { messageId });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Ошибка при удалении сообщения:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// ===== РЕАКЦИИ НА СООБЩЕНИЯ =====
+app.post("/api/messages/:messageId/react", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const messageId = parseInt(req.params.messageId);
+    const { emoji } = req.body;
+
+    if (!emoji || emoji.length > 10) {
+      return res.status(400).json({ ok: false, error: "Некорректный emoji" });
+    }
+
+    // Получаем нексферу из сообщения
+    const msgResult = await pool.query(
+      "SELECT nexfery_id FROM nexferies_messages WHERE id = $1",
+      [messageId]
+    );
+
+    if (msgResult.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: "Сообщение не найдено" });
+    }
+
+    const nexferyId = msgResult.rows[0].nexfery_id;
+
+    // Проверяем членство
+    const memberCheck = await pool.query(
+      "SELECT 1 FROM nexferies_members WHERE nexfery_id = $1 AND user_id = $2",
+      [nexferyId, userId]
+    );
+
+    if (memberCheck.rowCount === 0) {
+      return res.status(403).json({ ok: false, error: "Недостаточно прав" });
+    }
+
+    // Добавляем реакцию
+    await pool.query(
+      `INSERT INTO message_reactions (message_id, user_id, emoji)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (message_id, user_id, emoji) DO NOTHING`,
+      [messageId, userId, emoji]
+    );
+
+    // Broadcast реакции
+    io.to(`nexfery:${nexferyId}`).emit("reaction:added", {
+      messageId,
+      userId,
+      emoji
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Ошибка при добавлении реакции:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// ===== УДАЛЕНИЕ РЕАКЦИИ =====
+app.delete("/api/messages/:messageId/react", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const messageId = parseInt(req.params.messageId);
+    const { emoji } = req.body;
+
+    if (!emoji) {
+      return res.status(400).json({ ok: false, error: "Emoji требуется" });
+    }
+
+    // Получаем нексферу
+    const msgResult = await pool.query(
+      "SELECT nexfery_id FROM nexferies_messages WHERE id = $1",
+      [messageId]
+    );
+
+    if (msgResult.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: "Сообщение не найдено" });
+    }
+
+    const nexferyId = msgResult.rows[0].nexfery_id;
+
+    // Удаляем реакцию
+    await pool.query(
+      "DELETE FROM message_reactions WHERE message_id = $1 AND user_id = $2 AND emoji = $3",
+      [messageId, userId, emoji]
+    );
+
+    // Broadcast удаление
+    io.to(`nexfery:${nexferyId}`).emit("reaction:removed", {
+      messageId,
+      userId,
+      emoji
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Ошибка при удалении реакции:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// ===== ПРИГЛАШЕНИЯ В НЕКСФЕРЫ =====
+app.post("/api/nexferies/:nexferyId/invite", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const nexferyId = parseInt(req.params.nexferyId);
+    const { invitedUserId } = req.body;
+
+    // Проверяем что пользователь владелец или администратор
+    const roleCheck = await pool.query(
+      "SELECT role FROM nexferies_members WHERE nexfery_id = $1 AND user_id = $2",
+      [nexferyId, userId]
+    );
+
+    if (roleCheck.rowCount === 0 || !['owner', 'admin'].includes(roleCheck.rows[0].role)) {
+      return res.status(403).json({ ok: false, error: "Недостаточно прав" });
+    }
+
+    // Проверяем что приглашённый не участник
+    const memberCheck = await pool.query(
+      "SELECT 1 FROM nexferies_members WHERE nexfery_id = $1 AND user_id = $2",
+      [nexferyId, invitedUserId]
+    );
+
+    if (memberCheck.rowCount > 0) {
+      return res.status(400).json({ ok: false, error: "Пользователь уже участник" });
+    }
+
+    // Создаём приглашение
+    const result = await pool.query(
+      `INSERT INTO nexfery_invites (nexfery_id, invited_user_id, invited_by_user_id)
+       VALUES ($1, $2, $3)
+       RETURNING id, created_at, expires_at`,
+      [nexferyId, invitedUserId, userId]
+    );
+
+    // Уведомляем пользователя
+    io.emit("invitation:new", {
+      inviteId: result.rows[0].id,
+      nexferyId: nexferyId,
+      invitedUserId: invitedUserId
+    });
+
+    res.json({ ok: true, invite: result.rows[0] });
+  } catch (err) {
+    console.error("Ошибка при приглашении:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// ===== ПРИНЯТЬ ПРИГЛАШЕНИЕ =====
+app.post("/api/nexferies/invites/:inviteId/accept", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const inviteId = parseInt(req.params.inviteId);
+
+    // Получить приглашение
+    const inviteResult = await pool.query(
+      "SELECT * FROM nexfery_invites WHERE id = $1 AND invited_user_id = $2 AND status = 'pending'",
+      [inviteId, userId]
+    );
+
+    if (inviteResult.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: "Приглашение не найдено или уже обработано" });
+    }
+
+    const invite = inviteResult.rows[0];
+
+    // Добавить в участники
+    await pool.query(
+      "INSERT INTO nexferies_members (nexfery_id, user_id, role) VALUES ($1, $2, 'member')",
+      [invite.nexfery_id, userId]
+    );
+
+    // Отметить как принято
+    await pool.query(
+      "UPDATE nexfery_invites SET status = 'accepted' WHERE id = $1",
+      [inviteId]
+    );
+
+    // Уведомить всех в нексфере
+    io.to(`nexfery:${invite.nexfery_id}`).emit("member:joined", {
+      nexferyId: invite.nexfery_id,
+      userId: userId
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Ошибка при принятии приглашения:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// ===== ОТКЛОНИТЬ ПРИГЛАШЕНИЕ =====
+app.post("/api/nexferies/invites/:inviteId/decline", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const inviteId = parseInt(req.params.inviteId);
+
+    const inviteResult = await pool.query(
+      "SELECT * FROM nexfery_invites WHERE id = $1 AND invited_user_id = $2 AND status = 'pending'",
+      [inviteId, userId]
+    );
+
+    if (inviteResult.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: "Приглашение не найдено" });
+    }
+
+    // Отметить как отклонено
+    await pool.query(
+      "UPDATE nexfery_invites SET status = 'declined' WHERE id = $1",
+      [inviteId]
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Ошибка при отклонении приглашения:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// ===== УДАЛЕНИЕ НЕКСФЕРЫ =====
+app.delete("/api/nexferies/:nexferyId", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const nexferyId = parseInt(req.params.nexferyId);
+
+    // Проверяем что пользователь владелец
+    const ownerCheck = await pool.query(
+      "SELECT author_id FROM nexferies WHERE id = $1",
+      [nexferyId]
+    );
+
+    if (ownerCheck.rowCount === 0 || ownerCheck.rows[0].author_id !== userId) {
+      return res.status(403).json({ ok: false, error: "Только владелец может удалить нексферу" });
+    }
+
+    // Удаляем (CASCADE удалит все связанные данные)
+    await pool.query("DELETE FROM nexferies WHERE id = $1", [nexferyId]);
+
+    // Уведомляем всех в комнате
+    io.to(`nexfery:${nexferyId}`).emit("nexfery:deleted", { nexferyId });
+
+    // Отправляем событие обновления ленты
+    io.emit("nexus:updated");
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Ошибка при удалении нексферы:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// ===== TYPING INDICATOR =====
+app.post("/api/nexferies/:nexferyId/typing", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const nexferyId = parseInt(req.params.nexferyId);
+    const { isTyping } = req.body;
+
+    // Уведомляем об этом в комнате
+    io.to(`nexfery:${nexferyId}`).emit("user:typing", {
+      userId,
+      isTyping
+    });
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Ошибка при отправке typing indicator:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// ===== ПОЛУЧЕНИЕ ИНФОРМАЦИИ О ПОЛЬЗОВАТЕЛЕ =======
 app.get("/api/user/:userId", async (req, res) => {
   if (!req.session.user) {
     return res.status(401).json({ ok: false, error: "Не авторизирован" });

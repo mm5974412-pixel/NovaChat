@@ -86,6 +86,10 @@
 
       <section id="messages" class="chat-main-messages"></section>
 
+      <div id="typing-indicator" class="typing-indicator" style="display: none; padding: 8px; font-style: italic; color: #999;">
+        Пользователь печатает...
+      </div>
+
       <form id="nexfery-form" class="chat-main-input" style="display: none;">
         <input id="nexfery-input" type="text" placeholder="Напишите сообщение..." autocomplete="off"/>
         <button type="submit" class="btn-primary input-send-btn" id="nexfery-send-btn" title="Отправить">⬆️</button>
@@ -301,11 +305,12 @@
       }
     }
 
-    // Создать элемент сообщения
+    // Создать элемент сообщения с поддержкой реакций и редактирования
     function createMessageElement(msg) {
       const div = document.createElement('div');
       div.className = 'message';
-      if (msg.authorId === currentUserId) {
+      div.id = `message-${msg.id}`;
+      if (msg.isOwnMessage) {
         div.classList.add('message-own');
       }
 
@@ -314,15 +319,113 @@
         minute: '2-digit'
       });
 
+      let editedLabel = '';
+      if (msg.isEdited) {
+        editedLabel = '<small class="edited-label">(отредактировано)</small>';
+      }
+
+      let reactionsHtml = '';
+      if (msg.reactions && Object.keys(msg.reactions).length > 0) {
+        reactionsHtml = '<div class="message-reactions">';
+        for (const [emoji, count] of Object.entries(msg.reactions)) {
+          reactionsHtml += `<span class="reaction" onclick="toggleReaction(${msg.id}, '${emoji}')">${emoji} ${count}</span>`;
+        }
+        reactionsHtml += `<span class="reaction-add" onclick="showEmojiPicker(${msg.id})">➕</span></div>`;
+      } else if (msg.isOwnMessage || true) { // показываем для всех
+        reactionsHtml = '<div class="message-reactions"><span class="reaction-add" onclick="showEmojiPicker(${msg.id})">😊</span></div>';
+      }
+
+      let actionsHtml = '';
+      if (msg.isOwnMessage) {
+        actionsHtml = `
+          <div class="message-actions">
+            <button onclick="editMessage(${msg.id}, '${msg.text.replace(/'/g, "\\'")}')">✏️</button>
+            <button onclick="deleteMessage(${msg.id})">🗑️</button>
+          </div>
+        `;
+      }
+
       div.innerHTML = `
         <div class="message-content">
           ${msg.authorId !== currentUserId ? `<div class="message-author">${escapeHtml(msg.author)}</div>` : ''}
-          <div class="message-text">${escapeHtml(msg.text)}</div>
+          <div class="message-text">${escapeHtml(msg.text)} ${editedLabel}</div>
           <div class="message-time">${time}</div>
+          ${reactionsHtml}
+          ${actionsHtml}
         </div>
       `;
 
       return div;
+    }
+
+    // Переключение реакции
+    async function toggleReaction(messageId, emoji) {
+      try {
+        const hasReaction = document.querySelector(`[data-msg="${messageId}"][data-emoji="${emoji}"]`);
+        
+        if (hasReaction) {
+          // Удалить реакцию
+          await fetch(`/api/messages/${messageId}/react`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emoji })
+          });
+        } else {
+          // Добавить реакцию
+          await fetch(`/api/messages/${messageId}/react`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ emoji })
+          });
+        }
+      } catch (err) {
+        console.error('Ошибка при реакции:', err);
+      }
+    }
+
+    // Редактирование сообщения
+    async function editMessage(messageId, oldText) {
+      const newText = prompt('Отредактируйте сообщение:', oldText);
+      if (!newText || newText === oldText) return;
+
+      try {
+        const response = await fetch(`/api/nexferies/${currentNexferyId}/messages/${messageId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: newText })
+        });
+
+        if (!response.ok) throw new Error('Ошибка редактирования');
+      } catch (err) {
+        alert('Ошибка: ' + err.message);
+      }
+    }
+
+    // Удаление сообщения
+    async function deleteMessage(messageId) {
+      if (!confirm('Удалить сообщение?')) return;
+
+      try {
+        const response = await fetch(`/api/nexferies/${currentNexferyId}/messages/${messageId}`, {
+          method: 'DELETE'
+        });
+
+        if (!response.ok) throw new Error('Ошибка удаления');
+      } catch (err) {
+        alert('Ошибка: ' + err.message);
+      }
+    }
+
+    // Picker эмодзи (простая реализация)
+    function showEmojiPicker(messageId) {
+      const emojis = ['👍', '❤️', '😂', '😢', '😡', '🎉', '🔥', '💯'];
+      const emojiList = emojis.map(e => `<span onclick="quickReact(${messageId}, '${e}')" style="cursor:pointer;margin:2px">${e}</span>`).join('');
+      alert('Выберите эмодзи:\n' + emojis.join(' '));
+    }
+
+    // Быстрая реакция
+    async function quickReact(messageId, emoji) {
+      await toggleReaction(messageId, emoji);
     }
 
     // Отправить сообщение
@@ -347,10 +450,39 @@
 
         input.value = '';
         input.focus();
+
+        // Отправляем typing:false
+        socket.emit('nexfery:typing', {
+          nexferyId: currentNexferyId,
+          userId: currentUserId,
+          isTyping: false
+        });
       } catch (err) {
         console.error('Ошибка отправки сообщения:', err);
       }
     });
+
+    // Typing indicator при вводе
+    let typingTimeout;
+    const input = document.getElementById('nexfery-input');
+    if (input) {
+      input.addEventListener('input', () => {
+        socket.emit('nexfery:typing', {
+          nexferyId: currentNexferyId,
+          userId: currentUserId,
+          isTyping: true
+        });
+
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => {
+          socket.emit('nexfery:typing', {
+            nexferyId: currentNexferyId,
+            userId: currentUserId,
+            isTyping: false
+          });
+        }, 1000);
+      });
+    }
 
     // Слушаем новые сообщения по сокету
     socket.on('nexfery:new-message', (msg) => {
@@ -359,6 +491,70 @@
         const messageEl = createMessageElement(msg);
         messagesDiv.appendChild(messageEl);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
+    });
+
+    // Слушаем редактирование сообщений
+    socket.on('message:edited', (data) => {
+      const msgEl = document.getElementById(`message-${data.messageId}`);
+      if (msgEl) {
+        const textDiv = msgEl.querySelector('.message-text');
+        if (textDiv) {
+          textDiv.innerHTML = escapeHtml(data.text) + ' <small class="edited-label">(отредактировано)</small>';
+        }
+      }
+    });
+
+    // Слушаем удаление сообщений
+    socket.on('message:deleted', (data) => {
+      const msgEl = document.getElementById(`message-${data.messageId}`);
+      if (msgEl) {
+        msgEl.remove();
+      }
+    });
+
+    // Слушаем реакции
+    socket.on('reaction:added', (data) => {
+      const msgEl = document.getElementById(`message-${data.messageId}`);
+      if (msgEl) {
+        // Перезагружаем сообщение (или обновляем реакции)
+        loadNexferyMessages(currentNexferyId);
+      }
+    });
+
+    socket.on('reaction:removed', (data) => {
+      const msgEl = document.getElementById(`message-${data.messageId}`);
+      if (msgEl) {
+        loadNexferyMessages(currentNexferyId);
+      }
+    });
+
+    // Слушаем печать
+    socket.on('user:typing', (data) => {
+      const typingIndicator = document.getElementById('typing-indicator');
+      if (typingIndicator && data.isTyping) {
+        typingIndicator.textContent = 'Пользователь печатает...';
+        typingIndicator.style.display = 'block';
+      } else if (typingIndicator) {
+        typingIndicator.style.display = 'none';
+      }
+    });
+
+    // Слушаем присоединение нового члена
+    socket.on('member:joined', (data) => {
+      if (data.nexferyId === currentNexferyId) {
+        // Перезагружаем информацию о нексфере
+        selectNexfery(currentNexferyId);
+      }
+    });
+
+    // Слушаем удаление нексферы
+    socket.on('nexfery:deleted', (data) => {
+      if (data.nexferyId === currentNexferyId) {
+        alert('Нексфера была удалена');
+        document.getElementById('messages').innerHTML = '';
+        document.getElementById('nexfery-form').style.display = 'none';
+        loadNexferies();
       }
     });
 
