@@ -484,7 +484,19 @@ document.addEventListener('DOMContentLoaded', function() {
       el.dataset.messageId = msg.id;
     }
     el.dataset.author = msg.author || "";
-    el.dataset.text = msg.text || "";
+    
+    // Определяем исходный текст для редактирования
+    let originalText = msg.text || "";
+    const messageText = msg.text || "";
+    
+    // Если это ответ, извлекаем только текст ответа (без блока ответа)
+    if (messageText.startsWith("↩ ")) {
+      const lines = messageText.split("\n");
+      const actualText = lines.slice(1).join("\n");
+      originalText = actualText.trim();
+    }
+    
+    el.dataset.text = originalText;
     el.dataset.sticker = msg.sticker || msg.sticker_id || "";
     el.dataset.fileUrl = msg.fileUrl || msg.file_url || "";
     el.dataset.fileName = msg.fileName || msg.file_name || "";
