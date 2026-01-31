@@ -544,7 +544,7 @@
 
     // Поиск с debounce
     searchInput.addEventListener('input', (e) => {
-      const currentValue = e.target.value.trim();
+      const currentValue = searchInput.value.trim();
       
       // ВСЕГДА проверяем, пусто ли поле и очищаем если нужно
       if (!currentValue) {
@@ -566,9 +566,10 @@
       
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => {
-        // Проверяем еще раз перед поиском, что поле не пусто
-        if (searchInput.value.trim()) {
-          performSearch(currentValue);
+        // ВАЖНО: проверяем текущее значение поля в момент выполнения, не используем сохраненное
+        const valueAtExecution = searchInput.value.trim();
+        if (valueAtExecution) {
+          performSearch(valueAtExecution);
         }
       }, 300);
     });
