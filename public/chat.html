@@ -110,13 +110,11 @@
 
   <form id="chat-form" class="chat-main-input">
     <input type="file" id="file-input" style="display: none;" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip,.rar" />
+    <button type="button" id="attach-btn" class="btn-ghost input-icon-btn" title="Прикрепить файл">📎</button>
+    <button type="button" id="record-btn" class="btn-ghost record-btn input-icon-btn" title="Записать голосовое">🎙️</button>
+    <button type="button" id="sticker-btn" class="btn-ghost input-icon-btn" title="Отправить стикер">🏷️</button>
     <input id="message-input" type="text" placeholder="Напишите сообщение..." autocomplete="off"/>
-    <div class="input-buttons-container">
-      <button type="button" id="attach-btn" class="btn-ghost input-icon-btn" title="Прикрепить файл">📎</button>
-      <button type="button" id="record-btn" class="btn-ghost record-btn input-icon-btn" title="Записать голосовое">🎙️</button>
-      <button type="button" id="sticker-btn" class="btn-ghost input-icon-btn" title="Отправить стикер">🏷️</button>
-      <button type="submit" class="btn-primary input-send-btn" id="send-btn" title="Отправить">⬆️</button>
-    </div>
+    <button type="submit" class="btn-primary input-send-btn" id="send-btn" title="Отправить">⬆️</button>
   </form>
   <div id="recording-indicator" class="recording-indicator" style="display: none;">● Запись...</div>
 
