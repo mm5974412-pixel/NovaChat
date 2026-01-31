@@ -1341,9 +1341,6 @@
     currentNexusView = nexus;
     amBlockedInCurrentChat = false;
 
-    if (form) {
-      form.style.display = 'none';
-    }
     const blockedMsg = document.getElementById('blocked-message');
     if (blockedMsg) {
       blockedMsg.remove();
@@ -1351,6 +1348,7 @@
     clearReplyPreview();
 
     const isOwner = nexus.author_id === currentUser.id || nexus.my_role === "owner";
+    const isSubscribed = Boolean(nexus.my_role);
 
     chatTitleEl.textContent = nexus.title;
     chatSubtitleEl.textContent = `@${nexus.handle} · ${nexus.subscribers_count} подписчиков`;
@@ -1358,32 +1356,76 @@
     // Очищаем область сообщений
     messagesDiv.innerHTML = "";
 
-    // Если владелец - показываем форму для поста
-    if (isOwner) {
-      const postForm = document.createElement("div");
-      postForm.style.cssText = "padding: 16px; background: linear-gradient(135deg, #111827 0%, #0f172a 100%); border-radius: 16px; margin-bottom: 16px;";
-      postForm.innerHTML = `
-        <textarea id="nexus-post-input" rows="4" placeholder="Напишите пост..." style="width: 100%; padding: 10px; border: 1px solid #666; border-radius: 8px; background: rgba(15,23,42,0.6); color: #e5e7eb;"></textarea>
-        <button id="nexus-post-btn" class="btn-primary" style="margin-top: 10px; width: 100%;">Опубликовать пост</button>
-      `;
-      messagesDiv.appendChild(postForm);
+    // Показываем/скрываем форму ввода в зависимости от роли
+    if (form) {
+      if (isOwner) {
+        // Изменяем форму для ввода поста
+        form.style.display = 'flex';
+        input.placeholder = 'Напишите пост...';
+        input.id = 'nexus-post-message';
+        
+        // Заменяем обработчик отправки
+        form.onsubmit = (e) => {
+          e.preventDefault();
+          const text = input.value.trim();
+          if (!text) return;
 
-      const postBtn = postForm.querySelector("#nexus-post-btn");
-      postBtn.addEventListener("click", async () => {
-        const text = postForm.querySelector("#nexus-post-input").value.trim();
-        if (!text) return;
+          const btn = form.querySelector('button[type="submit"]');
+          if (btn) btn.disabled = true;
 
-        const res = await fetch(`/api/nexus/${nexus.id}/posts`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text })
+          fetch(`/api/nexus/${nexus.id}/posts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+          })
+            .then(r => r.json())
+            .then(result => {
+              if (result.ok) {
+                input.value = '';
+                loadNexusPosts(nexus.id);
+              }
+            })
+            .finally(() => {
+              if (btn) btn.disabled = false;
+            });
+        };
+      } else if (!isSubscribed) {
+        // Если не подписан - скрываем форму и показываем кнопку подписки
+        form.style.display = 'none';
+        
+        const subscribeForm = document.createElement("div");
+        subscribeForm.style.cssText = "padding: 16px; background: linear-gradient(135deg, #111827 0%, #0f172a 100%); border-radius: 16px; margin-bottom: 16px;";
+        subscribeForm.innerHTML = `
+          <p style="color: #9ca3af; margin: 0 0 12px 0; text-align: center;">Подпишитесь на нексус, чтобы читать посты и участвовать в обсуждениях</p>
+          <button id="nexus-subscribe-btn" class="btn-primary" style="width: 100%; padding: 12px; font-size: 16px;">✨ Подписаться на нексус</button>
+        `;
+        messagesDiv.appendChild(subscribeForm);
+
+        const subscribeBtn = subscribeForm.querySelector("#nexus-subscribe-btn");
+        subscribeBtn.addEventListener("click", async () => {
+          subscribeBtn.disabled = true;
+          try {
+            const res = await fetch(`/api/nexus/${nexus.id}/subscribe`, {
+              method: 'POST'
+            });
+            const data = await res.json();
+            if (data.ok) {
+              loadChats();
+              openNexus(data.nexus || nexus);
+            } else {
+              alert(data.error || 'Ошибка при подписке');
+            }
+          } catch (err) {
+            console.error(err);
+            alert('Ошибка при подписке');
+          } finally {
+            subscribeBtn.disabled = false;
+          }
         });
-        const result = await res.json();
-        if (result.ok) {
-          postForm.querySelector("#nexus-post-input").value = "";
-          loadNexusPosts(nexus.id);
-        }
-      });
+      } else {
+        // Подписан, но не владелец
+        form.style.display = 'none';
+      }
     }
 
     loadNexusPosts(nexus.id);
@@ -1400,22 +1442,26 @@
 
           const postsContainer = document.createElement("div");
           postsContainer.setAttribute("data-nexus-posts", nexusId);
-
-          data.posts.forEach((post) => {
-            const postEl = document.createElement("div");
-            postEl.classList.add("message");
-            postEl.innerHTML = `
-              <div style="font-size: 12px; color: #9ca3af; margin-bottom: 4px;">
-                ${post.author_display_name || post.author_username} · ${new Date(post.created_at).toLocaleString('ru-RU')}
-              </div>
-              <div style="color: #e5e7eb; margin-bottom: 8px;">${escapeHtml(post.text)}</div>
-              <button class="btn-ghost" style="font-size: 12px;" onclick="alert('Комментарии скоро будут доступны')">💬 ${post.comments_count || 0} комментариев</button>
-            `;
-            postsContainer.appendChild(postEl);
-          });
+          postsContainer.style.display = 'flex';
+          postsContainer.style.flexDirection = 'column';
+          postsContainer.style.gap = '12px';
 
           if (data.posts.length === 0) {
             postsContainer.innerHTML = "<div style='text-align: center; color: #9ca3af; padding: 20px;'>Постов еще нет</div>";
+          } else {
+            data.posts.forEach((post) => {
+              const postEl = document.createElement("div");
+              postEl.classList.add("message");
+              postEl.style.cssText = "padding: 12px; border-radius: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.15); display: flex; flex-direction: column; gap: 8px;";
+              postEl.innerHTML = `
+                <div style="font-size: 12px; color: #9ca3af;">
+                  ${post.author_display_name || post.author_username} · ${new Date(post.created_at).toLocaleString('ru-RU')}
+                </div>
+                <div style="color: #e5e7eb; line-height: 1.5; word-break: break-word;">${escapeHtml(post.text)}</div>
+                <button class="btn-ghost" style="font-size: 12px; align-self: flex-start;" onclick="alert('Комментарии скоро будут доступны')">💬 ${post.comments_count || 0} комментариев</button>
+              `;
+              postsContainer.appendChild(postEl);
+            });
           }
 
           messagesDiv.appendChild(postsContainer);
