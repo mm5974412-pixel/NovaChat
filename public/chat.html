@@ -1786,10 +1786,12 @@ document.addEventListener('DOMContentLoaded', function() {
       }
 
       if (action === "edit") {
+        // Берем актуальный текст из dataset, который хранит исходный текст сообщения
+        const textToEdit = currentContextElement?.dataset?.text || msg.text || "";
         showPrompt(
           "Измените сообщение",
           "Редактирование",
-          msg.text || "",
+          textToEdit,
           (newText) => {
             if (!newText || !newText.trim()) return;
             fetch(`/chats/${currentChatId}/messages/${msg.id}`, {
