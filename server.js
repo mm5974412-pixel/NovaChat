@@ -1174,7 +1174,13 @@ app.post("/admin/auth", async (req, res) => {
   const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "1001qppqA"; // Можно изменить в .env
   
   if (password === ADMIN_PASSWORD) {
-    res.json({ ok: true });
+    req.session.admin = true;
+    req.session.save((err) => {
+      if (err) {
+        return res.status(500).json({ ok: false, error: "Session error" });
+      }
+      res.json({ ok: true });
+    });
   } else {
     res.status(401).json({ ok: false, error: "Неверный пароль" });
   }
@@ -1182,19 +1188,10 @@ app.post("/admin/auth", async (req, res) => {
 
 // Middleware для проверки админа
 async function checkAdmin(req, res, next) {
-  if (!req.session.user) {
+  if (!req.session || !req.session.admin) {
     return res.status(401).json({ ok: false, error: "Not authenticated" });
   }
-  
-  try {
-    const result = await pool.query("SELECT is_admin FROM users WHERE id = $1", [req.session.user.id]);
-    if (!result.rows[0]?.is_admin) {
-      return res.status(403).json({ ok: false, error: "Not authorized" });
-    }
-    next();
-  } catch (err) {
-    return res.status(500).json({ ok: false, error: "Server error" });
-  }
+  next();
 }
 
 // Получить статистику
@@ -1226,16 +1223,14 @@ app.get("/admin/users", checkAdmin, async (req, res) => {
       LIMIT 100
     `);
     
-    res.json({
-      users: result.rows.map(u => ({
-        id: u.id,
-        username: u.username,
-        email: u.email,
-        is_admin: u.is_admin,
-        online: false,
-        created_at: u.created_at
-      }))
-    });
+    res.json(result.rows.map(u => ({
+      id: u.id,
+      username: u.username,
+      email: u.email,
+      is_admin: u.is_admin,
+      online: false,
+      created_at: u.created_at
+    })));
   } catch (err) {
     console.error("Users fetch error:", err);
     res.status(500).json({ ok: false, error: "Server error" });
@@ -1244,20 +1239,32 @@ app.get("/admin/users", checkAdmin, async (req, res) => {
 
 // Добавить пользователя
 app.post("/admin/users", checkAdmin, async (req, res) => {
-  const { username, email, password, isAdmin } = req.body;
+  const { username, email, password, is_admin } = req.body;
   
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
     
     const result = await pool.query(
-      "INSERT INTO users (username, email, password_hash, is_admin) VALUES ($1, $2, $3, $4) RETURNING id",
-      [username, email, hashedPassword, isAdmin || false]
+      "INSERT INTO users (username, email, password_hash, is_admin) VALUES ($1, $2, $3, $4) RETURNING id, username, email, is_admin, created_at",
+      [username, email, hashedPassword, is_admin || false]
     );
     
-    res.json({ ok: true, userId: result.rows[0].id });
+    const newUser = result.rows[0];
+    res.json({ 
+      ok: true, 
+      userId: newUser.id,
+      user: {
+        id: newUser.id,
+        username: newUser.username,
+        email: newUser.email,
+        is_admin: newUser.is_admin,
+        created_at: newUser.created_at,
+        online: false
+      }
+    });
   } catch (err) {
     console.error("User creation error:", err);
-    res.status(500).json({ ok: false, error: "Server error" });
+    res.status(500).json({ ok: false, error: err.message || "Server error" });
   }
 });
 
@@ -1280,21 +1287,19 @@ app.get("/admin/chats", checkAdmin, async (req, res) => {
     const result = await pool.query(`
       SELECT c.id, c.created_at,
              (SELECT COUNT(*) FROM chat_members WHERE chat_id = c.id) as members,
-             (SELECT COUNT(*) FROM messages WHERE chat_id = c.id) as messageCount
+             (SELECT COUNT(*) FROM messages WHERE chat_id = c.id) as messages
       FROM chats c
       ORDER BY c.created_at DESC
       LIMIT 100
     `);
     
-    res.json({
-      chats: result.rows.map(c => ({
-        id: c.id,
-        name: `Chat #${c.id}`,
-        members: parseInt(c.members),
-        messageCount: parseInt(c.messageCount),
-        created_at: c.created_at
-      }))
-    });
+    res.json(result.rows.map(c => ({
+      id: c.id,
+      name: `Chat #${c.id}`,
+      members: parseInt(c.members),
+      messages: parseInt(c.messages),
+      created_at: c.created_at
+    })));
   } catch (err) {
     console.error("Chats fetch error:", err);
     res.status(500).json({ ok: false, error: "Server error" });
@@ -1326,15 +1331,13 @@ app.get("/admin/messages", checkAdmin, async (req, res) => {
       LIMIT 200
     `);
     
-    res.json({
-      messages: result.rows.map(m => ({
-        id: m.id,
-        chatId: m.chat_id,
-        author: m.author || 'Unknown',
-        text: m.text,
-        created_at: m.created_at
-      }))
-    });
+    res.json(result.rows.map(m => ({
+      id: m.id,
+      chat_id: m.chat_id,
+      author: m.author || 'Unknown',
+      content: m.text,
+      created_at: m.created_at
+    })));
   } catch (err) {
     console.error("Messages fetch error:", err);
     res.status(500).json({ ok: false, error: "Server error" });
