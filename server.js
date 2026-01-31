@@ -69,7 +69,8 @@ async function initDb() {
     ADD COLUMN IF NOT EXISTS display_name TEXT,
     ADD COLUMN IF NOT EXISTS avatar_url TEXT,
     ADD COLUMN IF NOT EXISTS avatar_data TEXT,
-    ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+    ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW(),
+    ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
   `).catch(() => {
     // Игнорируем ошибки если колонки уже существуют
   });
@@ -292,7 +293,7 @@ app.get("/me", async (req, res) => {
 
   try {
     const result = await pool.query(
-      "SELECT username, display_name, avatar_data, created_at FROM users WHERE id = $1",
+      "SELECT username, display_name, avatar_data, created_at, is_admin FROM users WHERE id = $1",
       [req.session.user.id]
     );
 
@@ -308,6 +309,7 @@ app.get("/me", async (req, res) => {
       displayName: user.display_name,
       avatarUrl: user.avatar_data,
       registeredAt: user.created_at,
+      isAdmin: user.is_admin || false,
     });
   } catch (err) {
     console.error("Ошибка при получении информации пользователя:", err);
@@ -1051,6 +1053,194 @@ app.post("/api/unblock-user/:userId", async (req, res) => {
   } catch (err) {
     console.error("Ошибка при разблокировке:", err);
     return res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// ======= АДМИН ENDPOINTS =======
+
+// Endpoint для аутентификации админа
+app.post("/admin/auth", async (req, res) => {
+  const { password } = req.body;
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123"; // Можно изменить в .env
+  
+  if (password === ADMIN_PASSWORD) {
+    res.json({ ok: true });
+  } else {
+    res.status(401).json({ ok: false, error: "Неверный пароль" });
+  }
+});
+
+// Middleware для проверки админа
+async function checkAdmin(req, res, next) {
+  if (!req.session.user) {
+    return res.status(401).json({ ok: false, error: "Not authenticated" });
+  }
+  
+  try {
+    const result = await pool.query("SELECT is_admin FROM users WHERE id = $1", [req.session.user.id]);
+    if (!result.rows[0]?.is_admin) {
+      return res.status(403).json({ ok: false, error: "Not authorized" });
+    }
+    next();
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: "Server error" });
+  }
+}
+
+// Получить статистику
+app.get("/admin/stats", checkAdmin, async (req, res) => {
+  try {
+    const usersResult = await pool.query("SELECT COUNT(*) as count FROM users");
+    const chatsResult = await pool.query("SELECT COUNT(*) as count FROM chats");
+    const messagesResult = await pool.query("SELECT COUNT(*) as count FROM messages");
+    
+    res.json({
+      totalUsers: parseInt(usersResult.rows[0].count),
+      onlineUsers: 0, // TODO: implement socket-based online tracking
+      totalChats: parseInt(chatsResult.rows[0].count),
+      totalMessages: parseInt(messagesResult.rows[0].count)
+    });
+  } catch (err) {
+    console.error("Stats error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+// Получить всех пользователей
+app.get("/admin/users", checkAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id, username, email, is_admin, created_at 
+      FROM users 
+      ORDER BY created_at DESC 
+      LIMIT 100
+    `);
+    
+    res.json({
+      users: result.rows.map(u => ({
+        id: u.id,
+        username: u.username,
+        email: u.email,
+        is_admin: u.is_admin,
+        online: false,
+        created_at: u.created_at
+      }))
+    });
+  } catch (err) {
+    console.error("Users fetch error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+// Добавить пользователя
+app.post("/admin/users", checkAdmin, async (req, res) => {
+  const { username, email, password, isAdmin } = req.body;
+  
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const result = await pool.query(
+      "INSERT INTO users (username, email, password_hash, is_admin) VALUES ($1, $2, $3, $4) RETURNING id",
+      [username, email, hashedPassword, isAdmin || false]
+    );
+    
+    res.json({ ok: true, userId: result.rows[0].id });
+  } catch (err) {
+    console.error("User creation error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+// Удалить пользователя
+app.delete("/admin/users/:userId", checkAdmin, async (req, res) => {
+  const { userId } = req.params;
+  
+  try {
+    await pool.query("DELETE FROM users WHERE id = $1", [userId]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("User deletion error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+// Получить все чаты
+app.get("/admin/chats", checkAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT c.id, c.created_at,
+             (SELECT COUNT(*) FROM chat_members WHERE chat_id = c.id) as members,
+             (SELECT COUNT(*) FROM messages WHERE chat_id = c.id) as messageCount
+      FROM chats c
+      ORDER BY c.created_at DESC
+      LIMIT 100
+    `);
+    
+    res.json({
+      chats: result.rows.map(c => ({
+        id: c.id,
+        name: `Chat #${c.id}`,
+        members: parseInt(c.members),
+        messageCount: parseInt(c.messageCount),
+        created_at: c.created_at
+      }))
+    });
+  } catch (err) {
+    console.error("Chats fetch error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+// Удалить чат
+app.delete("/admin/chats/:chatId", checkAdmin, async (req, res) => {
+  const { chatId } = req.params;
+  
+  try {
+    await pool.query("DELETE FROM chats WHERE id = $1", [chatId]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Chat deletion error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+// Получить все сообщения
+app.get("/admin/messages", checkAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT m.id, m.chat_id, m.text, m.created_at,
+             u.username as author
+      FROM messages m
+      LEFT JOIN users u ON m.author_id = u.id
+      ORDER BY m.created_at DESC
+      LIMIT 200
+    `);
+    
+    res.json({
+      messages: result.rows.map(m => ({
+        id: m.id,
+        chatId: m.chat_id,
+        author: m.author || 'Unknown',
+        text: m.text,
+        created_at: m.created_at
+      }))
+    });
+  } catch (err) {
+    console.error("Messages fetch error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+// Удалить сообщение
+app.delete("/admin/messages/:messageId", checkAdmin, async (req, res) => {
+  const { messageId } = req.params;
+  
+  try {
+    await pool.query("DELETE FROM messages WHERE id = $1", [messageId]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Message deletion error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
   }
 });
 

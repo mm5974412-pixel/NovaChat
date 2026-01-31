@@ -48,6 +48,16 @@
     ➕ Создать новый чат
   </button>
 
+  <!-- Кнопка Админ-панели (только для админов) -->
+  <a
+    id="admin-panel-btn"
+    href="/admin.html"
+    class="btn-primary"
+    style="width: 100%; margin: 6px 0; display: none; text-align: center; text-decoration: none;"
+  >
+    ⚙️ Админ-панель
+  </a>
+
   <!-- Заголовок и список чатов -->
   <div class="sidebar-section-title">Чаты</div>
   <ul class="chat-list" id="chat-list"></ul>
@@ -458,6 +468,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const displayName = data.displayName || data.username;
         if (currentUsernameSpan) {
           currentUsernameSpan.textContent = displayName || "?";
+        }
+        // Показываем кнопку админ-панели если пользователь админ
+        if (data.isAdmin) {
+          const adminBtn = document.getElementById("admin-panel-btn");
+          if (adminBtn) {
+            adminBtn.style.display = "inline-flex";
+          }
         }
         // Добавляем обработчик клика для перехода в профиль
         const profileLink = document.getElementById("profile-link");
