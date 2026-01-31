@@ -685,6 +685,13 @@ html.light body {
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
 
+#nexus-btn,
+#create-nexus-btn {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 8px 0 !important;
+}
+
 /* Кнопка "Назад" — по умолчанию скрыта (для ПК) */
 .back-btn-mobile {
   display: none;
