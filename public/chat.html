@@ -973,10 +973,13 @@
       li.textContent = "У вас пока нет чатов.";
       chatList.appendChild(li);
 
-      if (chatTitleEl) chatTitleEl.textContent = "Nexora";
-      if (chatSubtitleEl)
-        chatSubtitleEl.textContent =
-          "Создайте новый чат, чтобы начать переписку.";
+      // Если не открыт нексус, устанавливаем "Nexora"
+      if (!currentNexusView) {
+        if (chatTitleEl) chatTitleEl.textContent = "Nexora";
+        if (chatSubtitleEl)
+          chatSubtitleEl.textContent =
+            "Создайте новый чат, чтобы начать переписку.";
+      }
 
       messagesDiv.innerHTML = "";
 
@@ -984,8 +987,8 @@
     }
 
     // Есть хотя бы один чат
-    // Не переписываем заголовок если чат уже открыт
-    if (!currentChatId) {
+    // Не переписываем заголовок если чат уже открыт или открыт нексус
+    if (!currentChatId && !currentNexusView) {
       if (chatTitleEl) chatTitleEl.textContent = "Nexora";
       if (chatSubtitleEl)
         chatSubtitleEl.textContent =
