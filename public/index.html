@@ -152,6 +152,41 @@
         border-radius: 8px !important;
       }
     }
+
+    /* Оптимизация анимаций для мобильных */
+    @media (prefers-reduced-motion: reduce) {
+      .nova-logo,
+      .nova-icon,
+      .header h1,
+      .landing-text h2,
+      .landing-text p,
+      .landing-actions,
+      .preview-window {
+        animation: none !important;
+      }
+    }
+
+    /* Лучше видимость на маленьких экранах */
+    @media (max-width: 600px) {
+      .nova-logo {
+        font-size: 36px;
+      }
+
+      .nova-icon {
+        width: 44px;
+        height: 44px;
+        font-size: 24px;
+      }
+
+      .landing-text h2 {
+        font-size: 22px !important;
+      }
+
+      .landing-text p {
+        font-size: 14px !important;
+        line-height: 1.6;
+      }
+    }
   </style>
   <script>
     // Применяем сохранённую тему до отрисовки страницы
@@ -175,10 +210,10 @@
     <div class="nav-right">
       <button id="theme-toggle" class="theme-toggle">🌙</button>
       <nav>
-      <a href="/login.html">Войти</a>
-      <a href="/register.html">Создать аккаунт</a>
-    </nav>
-      </div>
+        <a href="/login.html">Войти</a>
+        <a href="/register.html">Аккаунт</a>
+      </nav>
+    </div>
   </header>
 
   <main class="container">
@@ -189,16 +224,16 @@
           Реальное время, лаконичный интерфейс, голосовые сообщения и только главное — переписка.
         </p>
         <div class="landing-actions">
-  <a href="/chat" class="btn-primary">🚀 Открыть NovaChat</a>
-  <a href="/register.html" class="btn-secondary">✍️ Создать аккаунт</a>
-  <button
-    id="install-btn"
-    class="btn-ghost"
-    style="display: none;"
-  >
-    📲 Установить
-  </button>
-</div>
+          <a href="/chat" class="btn-primary">🚀 Открыть</a>
+          <a href="/register.html" class="btn-secondary">✍️ Создать</a>
+          <button
+            id="install-btn"
+            class="btn-ghost"
+            style="display: none;"
+          >
+            📲 Установить
+          </button>
+        </div>
       </div>
       <div class="landing-preview">
         <div class="preview-window">
