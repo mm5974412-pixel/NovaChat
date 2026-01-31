@@ -4455,9 +4455,7 @@ html.light .nexus-post-footer {
 
 /* ===== Меню выбора "Создать" ===== */
 .create-menu {
-  position: fixed;
-  top: 60px;
-  left: 20px;
+  position: absolute;
   background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
   border: 1px solid rgba(139, 92, 246, 0.2);
   border-radius: 12px;
@@ -4470,6 +4468,10 @@ html.light .nexus-post-footer {
   animation: slideDown 0.2s ease;
 }
 
+.create-menu.closing {
+  animation: slideUp 0.2s ease forwards;
+}
+
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -4478,6 +4480,17 @@ html.light .nexus-post-footer {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
   }
 }
 
