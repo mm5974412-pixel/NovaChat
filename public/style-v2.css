@@ -1917,6 +1917,17 @@ html.light #delete-chat-btn:hover {
 
 /* ===== Мобильная адаптация (только телефоны/планшеты) ===== */
 @media (max-width: 900px) {
+  html,
+  body {
+    height: auto;
+    overflow: auto;
+    overscroll-behavior-y: contain;
+  }
+
+  body.mobile-dialog-open {
+    overflow: hidden;
+  }
+
   /* Список чатов по умолчанию, диалог — только после выбора */
   body:not(.mobile-dialog-open) .chat-main {
     display: none;
@@ -2015,6 +2026,7 @@ html.light #delete-chat-btn:hover {
 
   .chat-main-messages {
     padding-right: 0;
+    padding-bottom: 72px;
     flex: 1;
     min-height: 0;
     overflow-y: auto;
@@ -2022,16 +2034,19 @@ html.light #delete-chat-btn:hover {
     -webkit-overflow-scrolling: touch;
   }
 
-  .chat-main-input {
+  body.mobile-dialog-open .chat-main-input {
     gap: 8px;
     padding-top: 8px;
     padding-bottom: calc(8px + env(safe-area-inset-bottom));
     margin-top: 0;
-    position: sticky;
+    position: fixed;
+    left: 0;
+    right: 0;
     bottom: 0;
     background: rgba(15, 23, 42, 0.98);
     flex-shrink: 0;
     border-top: 1px solid rgba(148, 163, 184, 0.2);
+    z-index: 5;
   }
 
   .chat-main-input input {
