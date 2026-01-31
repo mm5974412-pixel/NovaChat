@@ -4,32 +4,31 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NovaChat — профиль</title>
-  <link rel="stylesheet" href="/style-v2.css" />
   <style>
-    /* Переопределяем глобальные стили для страницы профиля */
+    /* КРИТИЧЕСКИ ВАЖНО: Переопределяем глобальные стили ДО загрузки style-v2.css */
     html {
       overflow: auto !important;
+      overflow-y: scroll !important;
       height: auto !important;
       min-height: 100vh !important;
-      scroll-behavior: smooth;
-      -webkit-overflow-scrolling: touch;
-      width: 100%;
+      max-height: none !important;
+      scroll-behavior: smooth !important;
     }
 
+    body,
     body.profile-body {
+      overflow: visible !important;
       overflow-x: hidden !important;
       overflow-y: auto !important;
       width: 100% !important;
       height: auto !important;
       min-height: 100vh !important;
       max-height: none !important;
-      -webkit-overflow-scrolling: touch;
-      touch-action: manipulation;
-      overscroll-behavior-y: contain;
-      margin: 0;
-      padding: 0;
       position: static !important;
+      touch-action: manipulation !important;
     }
+  </style>
+  <link rel="stylesheet" href="/style-v2.css" />
 
     .profile-page {
       display: flex;
@@ -640,6 +639,37 @@
       if (shouldBeLight) {
         document.documentElement.classList.add('light');
       }
+    })();
+  </script>
+  <script>
+    // КРИТИЧЕСКИ ВАЖНО: Принудительно включаем скроллинг для страницы профиля
+    (function() {
+      function enableScrolling() {
+        const html = document.documentElement;
+        const body = document.body;
+        
+        html.style.setProperty('overflow', 'auto', 'important');
+        html.style.setProperty('overflow-y', 'scroll', 'important');
+        html.style.setProperty('height', 'auto', 'important');
+        html.style.setProperty('max-height', 'none', 'important');
+        
+        body.style.setProperty('overflow', 'visible', 'important');
+        body.style.setProperty('overflow-y', 'auto', 'important');
+        body.style.setProperty('height', 'auto', 'important');
+        body.style.setProperty('max-height', 'none', 'important');
+        body.style.setProperty('position', 'static', 'important');
+      }
+      
+      // Выполняем сразу
+      enableScrolling();
+      
+      // И еще раз после загрузки DOM
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', enableScrolling);
+      }
+      
+      // И еще раз после полной загрузки страницы
+      window.addEventListener('load', enableScrolling);
     })();
   </script>
   <script src="/theme-toggle.js" defer></script>
