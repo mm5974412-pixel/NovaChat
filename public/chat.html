@@ -1432,13 +1432,19 @@ document.addEventListener('DOMContentLoaded', function() {
     if (blockerId === currentUser?.id && blockedId === currentPeerUserId) {
       // Я заблокировал - обновляю статус кнопки в профиле
       loadBlockStatus();
-      // Перезагружаем чаты для обновления
-      loadChats();
+      // Перезагружаем только сообщения в текущем чате, но НЕ закрываем чат
+      if (currentChatId) {
+        loadMessages(currentChatId);
+      }
     } else if (blockerId === currentPeerUserId && blockedId === currentUser?.id) {
-      // Меня заблокировали - блокирую форму ввода и перезагружаю чаты
+      // Меня заблокировали - блокирую форму ввода
       amBlockedInCurrentChat = true;
       updateInputBlockedStatus();
-      loadChats();
+      
+      // Перезагружаем сообщения в текущем чате
+      if (currentChatId) {
+        loadMessages(currentChatId);
+      }
       
       // Закрыть профиль-модаль если она открыта
       const profileModal = document.getElementById('profile-modal');
@@ -1457,13 +1463,19 @@ document.addEventListener('DOMContentLoaded', function() {
     if (blockerId === currentUser?.id && unblockedId === currentPeerUserId) {
       // Я разблокировал - обновляю статус кнопки в профиле
       loadBlockStatus();
-      // Перезагружаем чаты для обновления
-      loadChats();
+      // Перезагружаем только сообщения в текущем чате, но НЕ закрываем чат
+      if (currentChatId) {
+        loadMessages(currentChatId);
+      }
     } else if (blockerId === currentPeerUserId && unblockedId === currentUser?.id) {
-      // Меня разблокировали - разблокирую форму ввода и перезагружаю чаты
+      // Меня разблокировали - разблокирую форму ввода
       amBlockedInCurrentChat = false;
       updateInputBlockedStatus();
-      loadChats();
+      
+      // Перезагружаем сообщения в текущем чате
+      if (currentChatId) {
+        loadMessages(currentChatId);
+      }
     }
   });
 
