@@ -544,16 +544,17 @@
 
     // Поиск с debounce
     searchInput.addEventListener('input', (e) => {
-      const query = e.target.value.trim();
+      const currentValue = e.target.value.trim();
       
-      // Если строка пуста, сразу очищаем результаты и отменяем поиск
-      if (!query) {
+      // ВСЕГДА проверяем, пусто ли поле и очищаем если нужно
+      if (!currentValue) {
         clearTimeout(searchTimeout);
         // Отменяем текущий запрос если он в процессе
         if (searchAbortController) {
           searchAbortController.abort();
           searchAbortController = null;
         }
+        // Очищаем результаты
         searchResults.innerHTML = `
           <div class="nexus-search-empty">
             <div class="nexus-search-empty-icon">🔍</div>
@@ -565,8 +566,28 @@
       
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => {
-        performSearch(query);
+        // Проверяем еще раз перед поиском, что поле не пусто
+        if (searchInput.value.trim()) {
+          performSearch(currentValue);
+        }
       }, 300);
+    });
+
+    // Дополнительная защита: если поле пусто, очищаем результаты
+    searchInput.addEventListener('change', (e) => {
+      if (!e.target.value.trim()) {
+        clearTimeout(searchTimeout);
+        if (searchAbortController) {
+          searchAbortController.abort();
+          searchAbortController = null;
+        }
+        searchResults.innerHTML = `
+          <div class="nexus-search-empty">
+            <div class="nexus-search-empty-icon">🔍</div>
+            <p>Начните вводить текст для поиска</p>
+          </div>
+        `;
+      }
     });
 
     // Очистка поиска
