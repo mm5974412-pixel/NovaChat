@@ -116,7 +116,30 @@
       gap: 24px;
       max-width: 700px;
       overflow-y: auto;
+      overflow-x: hidden;
       min-height: 0;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Стилизация скроллбара */
+    .profile-main::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .profile-main::-webkit-scrollbar-track {
+      background: rgba(107, 114, 128, 0.1);
+      border-radius: 10px;
+    }
+
+    .profile-main::-webkit-scrollbar-thumb {
+      background: rgba(139, 92, 246, 0.4);
+      border-radius: 10px;
+      transition: background 0.3s ease;
+    }
+
+    .profile-main::-webkit-scrollbar-thumb:hover {
+      background: rgba(139, 92, 246, 0.7);
     }
 
     .profile-card {
@@ -540,6 +563,60 @@
     form {
       margin: 0;
     }
+
+    /* Кнопка "Вверх" */
+    .scroll-to-top-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, #8b5cf6, #6366f1);
+      border: none;
+      border-radius: 50%;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+      transition: all 0.3s ease;
+      z-index: 100;
+    }
+
+    .scroll-to-top-btn.show {
+      display: flex;
+    }
+
+    .scroll-to-top-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(139, 92, 246, 0.6);
+    }
+
+    .scroll-to-top-btn:active {
+      transform: translateY(-1px);
+    }
+
+    @media (max-width: 768px) {
+      .scroll-to-top-btn {
+        bottom: 20px;
+        right: 20px;
+        width: 45px;
+        height: 45px;
+        font-size: 18px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .scroll-to-top-btn {
+        bottom: 15px;
+        right: 15px;
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+      }
+    }
   </style>
   <script>
     (function() {
@@ -664,6 +741,9 @@
     </main>
   </div>
 
+  <!-- Кнопка прокрутки вверх -->
+  <button id="scroll-to-top-btn" class="scroll-to-top-btn" title="Вернуться в начало">↑</button>
+
   <!-- Модальное окно подтверждения -->
   <div id="confirm-modal" class="confirm-modal">
     <div class="confirm-modal-backdrop"></div>
@@ -776,7 +856,28 @@
     const bioInput = document.getElementById("bio-input");
     const bioHint = document.getElementById("bio-hint");
 
-    let currentUserData = null;
+    const profileMainElement = document.querySelector('.profile-main');
+    const scrollToTopBtn = document.getElementById('scroll-to-top-btn');
+
+    // Показать/скрыть кнопку прокрутки вверх
+    if (profileMainElement && scrollToTopBtn) {
+      profileMainElement.addEventListener('scroll', () => {
+        if (profileMainElement.scrollTop > 300) {
+          scrollToTopBtn.classList.add('show');
+        } else {
+          scrollToTopBtn.classList.remove('show');
+        }
+      });
+
+      scrollToTopBtn.addEventListener('click', () => {
+        profileMainElement.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      });
+    }
+
+    // Поддержка touch событий для лучшего скроллинга на мобильных
 
     function displayAvatar(element, avatarUrl, username) {
       if (avatarUrl && avatarUrl.trim()) {
