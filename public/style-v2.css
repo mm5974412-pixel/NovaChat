@@ -1550,6 +1550,7 @@ html.light .chat-main-messages::-webkit-scrollbar-thumb {
   animation: inputFadeIn 0.7s ease 0.2s both;
   flex-wrap: nowrap;
   align-items: center;
+  position: relative;
 }
 
 @keyframes inputFadeIn {
@@ -1577,6 +1578,7 @@ html.light .chat-main-messages::-webkit-scrollbar-thumb {
   flex: 1;
   min-width: 100px;
   padding: 10px 14px;
+  padding-right: 160px;
   border-radius: 999px;
   border: 1px solid #1f2937;
   background: linear-gradient(135deg, rgba(15, 23, 42, 0.6), rgba(20, 30, 48, 0.6));
@@ -1594,6 +1596,21 @@ html.light .chat-main-messages::-webkit-scrollbar-thumb {
 
 .chat-main-input input::placeholder {
   color: #6b7280;
+}
+
+.input-buttons-container {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  pointer-events: none;
+}
+
+.input-buttons-container button {
+  pointer-events: auto;
 }
 
 .input-icon-btn {
@@ -2062,6 +2079,14 @@ html.light #delete-chat-btn:hover {
     align-items: center;
   }
 
+  body.mobile-dialog-open .chat-main-input input {
+    padding-right: 140px;
+  }
+
+  body.mobile-dialog-open .input-buttons-container {
+    right: 4px;
+  }
+
   body.mobile-dialog-open .input-icon-btn {
     padding: 6px 8px !important;
     font-size: 14px;
@@ -2125,6 +2150,14 @@ html.light #delete-chat-btn:hover {
     overflow: visible;
     flex-wrap: nowrap;
     align-items: center;
+  }
+
+  body.mobile-dialog-open .chat-main-input input {
+    padding-right: 120px;
+  }
+
+  body.mobile-dialog-open .input-buttons-container {
+    right: 3px;
   }
 
   body.mobile-dialog-open .input-icon-btn {
