@@ -473,9 +473,23 @@
 
     // Поиск с debounce
     searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.trim();
+      
+      // Если строка пуста, сразу очищаем результаты
+      if (!query) {
+        clearTimeout(searchTimeout);
+        searchResults.innerHTML = `
+          <div class="nexus-search-empty">
+            <div class="nexus-search-empty-icon">🔍</div>
+            <p>Начните вводить текст для поиска</p>
+          </div>
+        `;
+        return;
+      }
+      
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => {
-        performSearch(e.target.value);
+        performSearch(query);
       }, 300);
     });
 
