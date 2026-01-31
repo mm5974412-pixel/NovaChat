@@ -2226,12 +2226,6 @@ html.light .chat-main-messages::-webkit-scrollbar-thumb {
 .input-send-btn:active {
   transform: scale(0.95) !important;
 }
-  transform: scale(1.08) translateY(-2px) !important;
-}
-
-.input-send-btn:active {
-  transform: scale(0.95) !important;
-}
 
 .record-btn.recording {
   border-color: #ef4444;
@@ -2333,8 +2327,6 @@ html.light .reply-preview-cancel {
   background: rgba(139, 92, 246, 0.15);
   border-color: rgba(139, 92, 246, 0.3);
   color: #5b21b6;
-}
-  color: #3730a3;
 }
 
 html.light .input-icon-btn {
@@ -4212,7 +4204,6 @@ html.light .nexus-comment-text {
     font-size: 14px;
     padding: 10px;
   }
-}
 
 @media (max-width: 768px) {
   .nexus-list {
