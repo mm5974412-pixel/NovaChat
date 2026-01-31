@@ -7,10 +7,13 @@
   <link rel="stylesheet" href="/style-v2.css" />
   <style>
     .profile-page {
-      min-height: 100vh;
-      display: flex;
+      display: grid;
+      grid-template-columns: 280px 1fr;
       gap: 20px;
       padding: 20px;
+      min-height: 100vh;
+      max-height: 100vh;
+      overflow: hidden;
     }
 
     .profile-sidebar {
@@ -23,8 +26,7 @@
       flex-direction: column;
       gap: 24px;
       height: fit-content;
-      position: sticky;
-      top: 20px;
+      position: relative;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
     }
 
@@ -114,6 +116,7 @@
       gap: 24px;
       max-width: 700px;
       overflow-y: auto;
+      min-height: 0;
     }
 
     .profile-card {
@@ -202,7 +205,7 @@
     /* Мобильные стили */
     @media (max-width: 1024px) {
       .profile-page {
-        flex-direction: column;
+        grid-template-columns: 1fr;
       }
 
       .profile-sidebar {
