@@ -90,10 +90,22 @@
     <input type="file" id="file-input" style="display: none;" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip,.rar" />
     <button type="button" id="attach-btn" class="btn-ghost input-icon-btn" title="Прикрепить файл">📎</button>
     <button type="button" id="record-btn" class="btn-ghost record-btn input-icon-btn" title="Записать голосовое">🎙️</button>
+    <button type="button" id="sticker-btn" class="btn-ghost input-icon-btn" title="Отправить стикер">🏷️</button>
     <input id="message-input" type="text" placeholder="Напишите сообщение..." autocomplete="off"/>
     <button type="submit" class="btn-primary input-send-btn" id="send-btn" title="Отправить">⬆️</button>
   </form>
   <div id="recording-indicator" class="recording-indicator" style="display: none;">● Запись...</div>
+
+  <!-- Модальное окно со стикерами -->
+  <div id="sticker-modal" class="sticker-modal" style="display: none;">
+    <div class="sticker-modal-content">
+      <div class="sticker-modal-header">
+        <h3>Выберите стикер</h3>
+        <button type="button" class="sticker-modal-close" id="sticker-close">✕</button>
+      </div>
+      <div class="sticker-grid" id="sticker-grid"></div>
+    </div>
+  </div>
 </main>
 
   <!-- Модальное окно профиля собеседника -->
@@ -427,8 +439,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     el.appendChild(authorEl);
 
-    // 🔥 Если есть файл - отображаем его
-    if (msg.fileUrl || msg.file_url) {
+    // 🔥 Если это стикер - отображаем его
+    if (msg.sticker || msg.sticker_id) {
+      const stickerId = msg.sticker || msg.sticker_id;
+      const stickerUrl = `/stickers/${stickerId}.svg`;
+      
+      const stickerImg = document.createElement("img");
+      stickerImg.src = stickerUrl;
+      stickerImg.alt = "Стикер";
+      stickerImg.style.width = "120px";
+      stickerImg.style.height = "120px";
+      stickerImg.style.objectFit = "contain";
+      stickerImg.style.marginTop = "6px";
+      
+      el.appendChild(stickerImg);
+    } else if (msg.fileUrl || msg.file_url) {
       const fileUrl = msg.fileUrl || msg.file_url;
       const fileType = msg.fileType || msg.file_type || '';
       const fileName = msg.fileName || msg.file_name || 'файл';
@@ -1497,6 +1522,104 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   });
+
+  // ======= СТИКЕРЫ =======
+  const stickerBtn = document.getElementById("sticker-btn");
+  const stickerModal = document.getElementById("sticker-modal");
+  const stickerClose = document.getElementById("sticker-close");
+  const stickerGrid = document.getElementById("sticker-grid");
+
+  const stickers = [
+    { id: "smile", name: "Улыбка", url: "/stickers/smile.svg" },
+    { id: "love", name: "Любовь", url: "/stickers/love.svg" },
+    { id: "cool", name: "Крутой", url: "/stickers/cool.svg" },
+    { id: "thumbsup", name: "Палец вверх", url: "/stickers/thumbsup.svg" },
+    { id: "sad", name: "Грусть", url: "/stickers/sad.svg" },
+    { id: "heart", name: "Сердце", url: "/stickers/heart.svg" },
+    { id: "wow", name: "Вау", url: "/stickers/wow.svg" },
+    { id: "angry", name: "Злость", url: "/stickers/angry.svg" },
+  ];
+
+  // Отрисовка стикеров в модальном окне
+  function renderStickers() {
+    stickerGrid.innerHTML = "";
+    stickers.forEach((sticker) => {
+      const stickerBtn = document.createElement("button");
+      stickerBtn.type = "button";
+      stickerBtn.className = "sticker-item";
+      stickerBtn.title = sticker.name;
+      
+      const img = document.createElement("img");
+      img.src = sticker.url;
+      img.alt = sticker.name;
+      img.style.width = "80px";
+      img.style.height = "80px";
+      img.style.objectFit = "contain";
+      
+      stickerBtn.appendChild(img);
+      
+      stickerBtn.addEventListener("click", () => {
+        sendSticker(sticker.id);
+        stickerModal.style.display = "none";
+      });
+      
+      stickerGrid.appendChild(stickerBtn);
+    });
+  }
+
+  // Открыть модальное окно со стикерами
+  if (stickerBtn) {
+    stickerBtn.addEventListener("click", () => {
+      if (!currentChatId) {
+        showAlert("Выберите чат или создайте новый", "Чат не выбран", "ОК", "primary");
+        return;
+      }
+      renderStickers();
+      stickerModal.style.display = "flex";
+    });
+  }
+
+  // Закрыть модальное окно
+  if (stickerClose) {
+    stickerClose.addEventListener("click", () => {
+      stickerModal.style.display = "none";
+    });
+  }
+
+  // Закрыть при клике на фон
+  if (stickerModal) {
+    stickerModal.addEventListener("click", (e) => {
+      if (e.target === stickerModal) {
+        stickerModal.style.display = "none";
+      }
+    });
+  }
+
+  // Отправить стикер
+  function sendSticker(stickerId) {
+    if (!currentChatId) return;
+
+    fetch(`/chats/${currentChatId}/messages`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ 
+        text: "", 
+        sticker: stickerId 
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.ok) {
+          showAlert(data.error || "Не удалось отправить стикер", "Ошибка", "ОК", "danger");
+          return;
+        }
+      })
+      .catch(() => {
+        showAlert("Произошла ошибка при отправке стикера", "Ошибка сервера", "ОК", "danger");
+      });
+  }
 
   // Инициализация
   loadCurrentUser().then(() => {
