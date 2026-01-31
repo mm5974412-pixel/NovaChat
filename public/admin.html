@@ -463,9 +463,8 @@
     </div>
 
     <!-- Админ-панель (скрыта по умолчанию) -->
-    <div id="admin-panel" style="display: none;">
-    <!-- Sidebar -->
-    <div class="admin-sidebar">
+    <div id="admin-panel-content" style="display: none;">
+      <div class="admin-container">
       <div class="admin-sidebar-title">
         <span>⚙️</span>
         <span>NovaChat Admin</span>
@@ -618,6 +617,8 @@
         </div>
       </div>
     </div>
+      </div>
+    </div>
   </div>
 
   <!-- User Modal -->
@@ -676,40 +677,28 @@
       })
         .then(res => res.json())
         .then(data => {
+          console.log('Auth response:', data);
           if (data.ok) {
             isAdminAuthenticated = true;
-            document.getElementById('admin-login').style.display = 'none';
-            document.getElementById('admin-panel-content').style.display = 'block';
-            loadDashboardStats();
+            showAdminPanel();
           } else {
             errorDiv.textContent = data.error || 'Неверный пароль';
             errorDiv.style.display = 'block';
           }
         })
         .catch(err => {
+          console.error('Auth error:', err);
           errorDiv.textContent = 'Ошибка сервера';
           errorDiv.style.display = 'block';
         });
     }
 
-    // Check if logged in as admin
-    function checkAdminAccess() {
-      // Если не аутентифицирован, показываем форму входа
-      if (!isAdminAuthenticated) {
-        document.getElementById('admin-login').style.display = 'flex';
-        document.getElementById('admin-panel-content').style.display = 'none';
-        
-        // Добавляем слушателя на кнопку входа
-        document.getElementById('admin-login-btn').addEventListener('click', authenticateAdmin);
-        document.getElementById('admin-password').addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') authenticateAdmin();
-        });
-        return;
-      }
-
-      // Если аутентифицирован, показываем панель
+    // Показать админ-панель
+    function showAdminPanel() {
       document.getElementById('admin-login').style.display = 'none';
-      document.getElementById('admin-panel-content').style.display = 'block';
+      document.getElementById('admin-panel-content').style.display = 'flex';
+      loadDashboardStats();
+    }
     }
 
     // Load dashboard stats
@@ -932,7 +921,10 @@
     });
 
     // Initial load
-    checkAdminAccess();
+    document.getElementById('admin-login-btn').addEventListener('click', authenticateAdmin);
+    document.getElementById('admin-password').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') authenticateAdmin();
+    });
   </script>
 </body>
 </html>
