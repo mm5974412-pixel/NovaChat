@@ -327,8 +327,51 @@ async function initDb() {
     ON CONFLICT (key) DO NOTHING;
   `);
 
+  // 7. Нексусы (каналы)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS nexus (
+      id SERIAL PRIMARY KEY,
+      title TEXT NOT NULL,
+      handle TEXT UNIQUE NOT NULL,
+      description TEXT,
+      avatar_data TEXT,
+      author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS nexus_subscribers (
+      nexus_id INTEGER NOT NULL REFERENCES nexus(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      role TEXT DEFAULT 'subscriber',
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (nexus_id, user_id)
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS nexus_posts (
+      id SERIAL PRIMARY KEY,
+      nexus_id INTEGER NOT NULL REFERENCES nexus(id) ON DELETE CASCADE,
+      author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      text TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS nexus_comments (
+      id SERIAL PRIMARY KEY,
+      post_id INTEGER NOT NULL REFERENCES nexus_posts(id) ON DELETE CASCADE,
+      author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      text TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
   console.log(
-    "База данных инициализирована (users, chats, chat_members, messages, blocked_users, settings готовы)"
+    "База данных инициализирована (users, chats, chat_members, messages, blocked_users, settings, nexus готовы)"
   );
 }
 
@@ -358,6 +401,16 @@ app.use(
     },
   })
 );
+
+// ======= AUTH MIDDLEWARE =======
+function requireAuth(req, res, next) {
+  if (!req.session.user) {
+    return res.status(401).json({ ok: false, error: "Не авторизован" });
+  }
+  next();
+}
+
+const NEXUS_HANDLE_REGEX = /^[a-zA-Z0-9_-]{3,30}$/;
 
 // ======= MULTER: конфигурация для загрузки файлов =======
 const storage = multer.diskStorage({
@@ -400,6 +453,21 @@ app.get("/chat", (req, res) => {
     return res.redirect("/login.html");
   }
   res.sendFile(path.join(__dirname, "public", "chat.html"));
+});
+
+// ======= НЕКСУСЫ (страницы) =======
+app.get("/nexus", (req, res) => {
+  if (!req.session.user) {
+    return res.redirect("/login.html");
+  }
+  res.sendFile(path.join(__dirname, "public", "nexus.html"));
+});
+
+app.get("/nexus/profile", (req, res) => {
+  if (!req.session.user) {
+    return res.redirect("/login.html");
+  }
+  res.sendFile(path.join(__dirname, "public", "nexus-profile.html"));
 });
 
 // Статика
@@ -629,6 +697,340 @@ app.get("/api/user/:userId", async (req, res) => {
     });
   } catch (err) {
     console.error("Ошибка при получении профиля:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// ======= НЕКСУСЫ (API) =======
+app.post("/api/nexus", requireAuth, upload.single("avatar"), async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const title = (req.body.title || "").trim();
+    const rawHandle = (req.body.handle || "").trim().toLowerCase();
+    const description = (req.body.description || "").trim();
+
+    if (title.length < 3 || title.length > 60) {
+      return res.status(400).json({ ok: false, error: "Название должно быть от 3 до 60 символов" });
+    }
+
+    if (!NEXUS_HANDLE_REGEX.test(rawHandle)) {
+      return res.status(400).json({ ok: false, error: "Ник нексуса должен быть 3-30 символов (буквы, цифры, _ или -)" });
+    }
+
+    const existingHandle = await pool.query(
+      "SELECT id FROM nexus WHERE handle = $1",
+      [rawHandle]
+    );
+    if (existingHandle.rowCount > 0) {
+      return res.status(400).json({ ok: false, error: "Такой ник нексуса уже занят" });
+    }
+
+    let avatarData = null;
+    if (req.file) {
+      const fileBuffer = fs.readFileSync(req.file.path);
+      const base64Data = fileBuffer.toString("base64");
+      const mimeType = req.file.mimetype;
+      avatarData = `data:${mimeType};base64,${base64Data}`;
+      fs.unlinkSync(req.file.path);
+    }
+
+    const result = await pool.query(
+      `
+        INSERT INTO nexus (title, handle, description, avatar_data, author_id)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id, title, handle, description, avatar_data, author_id, created_at
+      `,
+      [title, rawHandle, description || null, avatarData, userId]
+    );
+
+    const nexus = result.rows[0];
+
+    await pool.query(
+      "INSERT INTO nexus_subscribers (nexus_id, user_id, role) VALUES ($1, $2, 'owner') ON CONFLICT DO NOTHING",
+      [nexus.id, userId]
+    );
+
+    res.json({ ok: true, nexus });
+  } catch (err) {
+    console.error("Ошибка при создании нексуса:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+app.get("/api/nexus", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const result = await pool.query(
+      `
+        SELECT
+          n.id,
+          n.title,
+          n.handle,
+          n.description,
+          n.avatar_data,
+          n.author_id,
+          n.created_at,
+          u.username AS author_username,
+          u.display_name AS author_display_name,
+          COALESCE(subs.subscribers_count, 0) AS subscribers_count,
+          COALESCE(posts.posts_count, 0) AS posts_count,
+          ns_me.role AS my_role
+        FROM nexus n
+        JOIN users u ON u.id = n.author_id
+        LEFT JOIN (
+          SELECT nexus_id, COUNT(*)::int AS subscribers_count
+          FROM nexus_subscribers
+          GROUP BY nexus_id
+        ) subs ON subs.nexus_id = n.id
+        LEFT JOIN (
+          SELECT nexus_id, COUNT(*)::int AS posts_count
+          FROM nexus_posts
+          GROUP BY nexus_id
+        ) posts ON posts.nexus_id = n.id
+        LEFT JOIN nexus_subscribers ns_me ON ns_me.nexus_id = n.id AND ns_me.user_id = $1
+        ORDER BY n.created_at DESC
+      `,
+      [userId]
+    );
+
+    res.json({ ok: true, nexus: result.rows });
+  } catch (err) {
+    console.error("Ошибка при получении списка нексусов:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+app.get("/api/nexus/:nexusId", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const nexusId = parseInt(req.params.nexusId, 10);
+
+    const result = await pool.query(
+      `
+        SELECT
+          n.id,
+          n.title,
+          n.handle,
+          n.description,
+          n.avatar_data,
+          n.author_id,
+          n.created_at,
+          u.username AS author_username,
+          u.display_name AS author_display_name,
+          COALESCE(subs.subscribers_count, 0) AS subscribers_count,
+          COALESCE(posts.posts_count, 0) AS posts_count,
+          ns_me.role AS my_role
+        FROM nexus n
+        JOIN users u ON u.id = n.author_id
+        LEFT JOIN (
+          SELECT nexus_id, COUNT(*)::int AS subscribers_count
+          FROM nexus_subscribers
+          GROUP BY nexus_id
+        ) subs ON subs.nexus_id = n.id
+        LEFT JOIN (
+          SELECT nexus_id, COUNT(*)::int AS posts_count
+          FROM nexus_posts
+          GROUP BY nexus_id
+        ) posts ON posts.nexus_id = n.id
+        LEFT JOIN nexus_subscribers ns_me ON ns_me.nexus_id = n.id AND ns_me.user_id = $1
+        WHERE n.id = $2
+        LIMIT 1
+      `,
+      [userId, nexusId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: "Нексус не найден" });
+    }
+
+    res.json({ ok: true, nexus: result.rows[0] });
+  } catch (err) {
+    console.error("Ошибка при получении нексуса:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+app.post("/api/nexus/:nexusId/subscribe", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const nexusId = parseInt(req.params.nexusId, 10);
+
+    await pool.query(
+      "INSERT INTO nexus_subscribers (nexus_id, user_id, role) VALUES ($1, $2, 'subscriber') ON CONFLICT DO NOTHING",
+      [nexusId, userId]
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Ошибка при подписке на нексус:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+app.post("/api/nexus/:nexusId/unsubscribe", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const nexusId = parseInt(req.params.nexusId, 10);
+
+    const roleResult = await pool.query(
+      "SELECT role FROM nexus_subscribers WHERE nexus_id = $1 AND user_id = $2",
+      [nexusId, userId]
+    );
+
+    if (roleResult.rowCount > 0 && roleResult.rows[0].role === "owner") {
+      return res.status(400).json({ ok: false, error: "Владелец не может отписаться" });
+    }
+
+    await pool.query(
+      "DELETE FROM nexus_subscribers WHERE nexus_id = $1 AND user_id = $2",
+      [nexusId, userId]
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Ошибка при отписке от нексуса:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+app.get("/api/nexus/:nexusId/posts", requireAuth, async (req, res) => {
+  try {
+    const nexusId = parseInt(req.params.nexusId, 10);
+    const result = await pool.query(
+      `
+        SELECT
+          p.id,
+          p.text,
+          p.created_at,
+          u.username AS author_username,
+          u.display_name AS author_display_name,
+          COALESCE(c.comments_count, 0) AS comments_count
+        FROM nexus_posts p
+        JOIN users u ON u.id = p.author_id
+        LEFT JOIN (
+          SELECT post_id, COUNT(*)::int AS comments_count
+          FROM nexus_comments
+          GROUP BY post_id
+        ) c ON c.post_id = p.id
+        WHERE p.nexus_id = $1
+        ORDER BY p.created_at DESC
+      `,
+      [nexusId]
+    );
+
+    res.json({ ok: true, posts: result.rows });
+  } catch (err) {
+    console.error("Ошибка при получении постов нексуса:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+app.post("/api/nexus/:nexusId/posts", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const nexusId = parseInt(req.params.nexusId, 10);
+    const text = (req.body.text || "").trim();
+
+    if (!text || text.length > 5000) {
+      return res.status(400).json({ ok: false, error: "Текст поста должен быть от 1 до 5000 символов" });
+    }
+
+    const ownerResult = await pool.query(
+      "SELECT author_id FROM nexus WHERE id = $1",
+      [nexusId]
+    );
+
+    if (ownerResult.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: "Нексус не найден" });
+    }
+
+    if (ownerResult.rows[0].author_id !== userId) {
+      return res.status(403).json({ ok: false, error: "Только владелец может публиковать посты" });
+    }
+
+    const result = await pool.query(
+      `
+        INSERT INTO nexus_posts (nexus_id, author_id, text)
+        VALUES ($1, $2, $3)
+        RETURNING id, text, created_at
+      `,
+      [nexusId, userId, text]
+    );
+
+    res.json({ ok: true, post: result.rows[0] });
+  } catch (err) {
+    console.error("Ошибка при создании поста нексуса:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+app.get("/api/nexus/posts/:postId/comments", requireAuth, async (req, res) => {
+  try {
+    const postId = parseInt(req.params.postId, 10);
+    const result = await pool.query(
+      `
+        SELECT
+          c.id,
+          c.text,
+          c.created_at,
+          u.username AS author_username,
+          u.display_name AS author_display_name
+        FROM nexus_comments c
+        JOIN users u ON u.id = c.author_id
+        WHERE c.post_id = $1
+        ORDER BY c.created_at ASC
+      `,
+      [postId]
+    );
+
+    res.json({ ok: true, comments: result.rows });
+  } catch (err) {
+    console.error("Ошибка при получении комментариев:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+app.post("/api/nexus/posts/:postId/comments", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const postId = parseInt(req.params.postId, 10);
+    const text = (req.body.text || "").trim();
+
+    if (!text || text.length > 2000) {
+      return res.status(400).json({ ok: false, error: "Комментарий должен быть от 1 до 2000 символов" });
+    }
+
+    const postResult = await pool.query(
+      "SELECT nexus_id FROM nexus_posts WHERE id = $1",
+      [postId]
+    );
+
+    if (postResult.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: "Пост не найден" });
+    }
+
+    const nexusId = postResult.rows[0].nexus_id;
+    const subResult = await pool.query(
+      "SELECT role FROM nexus_subscribers WHERE nexus_id = $1 AND user_id = $2",
+      [nexusId, userId]
+    );
+
+    if (subResult.rowCount === 0) {
+      return res.status(403).json({ ok: false, error: "Комментарии доступны только подписчикам" });
+    }
+
+    const result = await pool.query(
+      `
+        INSERT INTO nexus_comments (post_id, author_id, text)
+        VALUES ($1, $2, $3)
+        RETURNING id, text, created_at
+      `,
+      [postId, userId, text]
+    );
+
+    res.json({ ok: true, comment: result.rows[0] });
+  } catch (err) {
+    console.error("Ошибка при создании комментария:", err);
     res.status(500).json({ ok: false, error: "Ошибка сервера" });
   }
 });

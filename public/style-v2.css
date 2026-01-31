@@ -3057,3 +3057,335 @@ html.light .sticker-item:hover {
   background: rgba(139, 92, 246, 0.15);
   border-color: rgba(139, 92, 246, 0.4);
 }
+
+/* ===== Нексусы ===== */
+.nexus-section {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.nexus-form-card {
+  background: linear-gradient(135deg, #0f172a 0%, #111827 100%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+}
+
+.nexus-form-card h3 {
+  margin: 0 0 16px;
+  color: #e5e7eb;
+}
+
+.nexus-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nexus-form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nexus-form-row label {
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.nexus-form-row input,
+.nexus-form-row textarea {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #e5e7eb;
+  font-size: 14px;
+  outline: none;
+}
+
+.nexus-form-row input:focus,
+.nexus-form-row textarea:focus {
+  border-color: rgba(139, 92, 246, 0.6);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+}
+
+.nexus-handle-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nexus-handle-input span {
+  color: #a78bfa;
+  font-weight: 700;
+}
+
+.nexus-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nexus-error {
+  color: #f87171;
+  font-size: 13px;
+}
+
+.nexus-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.nexus-card {
+  background: linear-gradient(135deg, #111827 0%, #0f172a 100%);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+}
+
+.nexus-card-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.nexus-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 22px;
+  background-size: cover;
+  background-position: center;
+}
+
+.nexus-avatar-large {
+  width: 96px;
+  height: 96px;
+  border-radius: 20px;
+  font-size: 36px;
+}
+
+.nexus-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nexus-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #e5e7eb;
+}
+
+.nexus-handle {
+  font-size: 13px;
+  color: #a78bfa;
+  font-weight: 600;
+}
+
+.nexus-meta {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.nexus-desc {
+  font-size: 14px;
+  color: #e5e7eb;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.nexus-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.nexus-badge {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.nexus-loading,
+.nexus-empty {
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+.nexus-profile {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.nexus-profile-card {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 20px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #0f172a 0%, #111827 100%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.nexus-profile-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nexus-post-form {
+  background: linear-gradient(135deg, #111827 0%, #0f172a 100%);
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nexus-post-form textarea {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #e5e7eb;
+  font-size: 14px;
+  outline: none;
+}
+
+.nexus-post {
+  background: linear-gradient(135deg, #0f172a 0%, #111827 100%);
+  border-radius: 16px;
+  padding: 16px;
+  border: 1px solid rgba(139, 92, 246, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nexus-post-header {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.nexus-post-text {
+  font-size: 15px;
+  color: #e5e7eb;
+  white-space: pre-wrap;
+}
+
+.nexus-post-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.nexus-comments {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nexus-comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nexus-comment {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.nexus-comment-header {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+
+.nexus-comment-text {
+  font-size: 14px;
+  color: #e5e7eb;
+}
+
+.nexus-comment-form {
+  display: flex;
+  gap: 8px;
+}
+
+.nexus-comment-form input {
+  flex: 1;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  padding: 8px 10px;
+  color: #e5e7eb;
+  font-size: 14px;
+  outline: none;
+}
+
+.nexus-comment-notice {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+@media (max-width: 768px) {
+  .nexus-profile-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+html.light .nexus-form-card,
+html.light .nexus-card,
+html.light .nexus-profile-card,
+html.light .nexus-post,
+html.light .nexus-post-form {
+  background: #ffffff;
+  border-color: rgba(148, 163, 184, 0.3);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
+html.light .nexus-form-row input,
+html.light .nexus-form-row textarea,
+html.light .nexus-post-form textarea,
+html.light .nexus-comment-form input {
+  background: #f8fafc;
+  color: #1f2937;
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+html.light .nexus-title,
+html.light .nexus-desc,
+html.light .nexus-post-text,
+html.light .nexus-comment-text {
+  color: #111827;
+}

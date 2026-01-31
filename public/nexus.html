@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nexora — нексусы</title>
+  <link rel="stylesheet" href="/style-v2.css" />
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const shouldBeLight = savedTheme === 'light' || (!savedTheme && !prefersDark);
+      if (shouldBeLight) {
+        document.documentElement.classList.add('light');
+      }
+    })();
+  </script>
+  <script src="/theme-toggle.js" defer></script>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-circle">✨</div>
+        <div class="logo-text">
+          <div class="logo-name">Nexora</div>
+          <div class="logo-subtitle">нексусы и сообщества</div>
+        </div>
+      </div>
+
+      <div class="current-user" id="profile-link" style="cursor: pointer;">
+        <span class="current-user-label">Вы:</span>
+        <span class="current-user-name" id="current-username">...</span>
+      </div>
+
+      <button id="theme-toggle" class="theme-toggle" style="width: 100%; margin-bottom: 10px;">🌙</button>
+
+      <a
+        href="/chat"
+        class="btn-secondary"
+        style="width: 100%; margin: 6px 0; text-align: center; text-decoration: none;"
+      >
+        💬 К чатам
+      </a>
+
+      <a
+        id="admin-panel-btn"
+        href="/admin.html"
+        class="btn-primary"
+        style="width: 100%; margin: 6px 0; display: none; text-align: center; text-decoration: none;"
+      >
+        ⚙️ Админ-панель
+      </a>
+    </aside>
+
+    <main class="chat-main">
+      <div class="chat-main-header">
+        <div class="chat-main-top">
+          <div class="chat-main-titles">
+            <div class="chat-main-title">🧭 Нексусы</div>
+            <div class="chat-main-subtitle">Создавайте нексусы, подписывайтесь и читайте посты.</div>
+          </div>
+        </div>
+      </div>
+
+      <section class="nexus-section">
+        <div class="nexus-form-card">
+          <h3>Создать нексус</h3>
+          <form id="nexus-create-form" class="nexus-form" enctype="multipart/form-data">
+            <div class="nexus-form-row">
+              <label>Название</label>
+              <input type="text" name="title" id="nexus-title" placeholder="Например, Новые идеи" required />
+            </div>
+            <div class="nexus-form-row">
+              <label>Ник (латиница)</label>
+              <div class="nexus-handle-input">
+                <span>@</span>
+                <input type="text" name="handle" id="nexus-handle" placeholder="nexus_ideas" required />
+              </div>
+            </div>
+            <div class="nexus-form-row">
+              <label>Описание</label>
+              <textarea name="description" id="nexus-description" rows="3" placeholder="О чем этот нексус?"></textarea>
+            </div>
+            <div class="nexus-form-row">
+              <label>Аватар</label>
+              <input type="file" name="avatar" id="nexus-avatar" accept="image/*" />
+            </div>
+            <div class="nexus-form-actions">
+              <button type="submit" class="btn-primary">Создать</button>
+              <div id="nexus-error" class="nexus-error"></div>
+            </div>
+          </form>
+        </div>
+
+        <div class="nexus-list" id="nexus-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const currentUsernameEl = document.getElementById('current-username');
+    const adminPanelBtn = document.getElementById('admin-panel-btn');
+    const nexusListEl = document.getElementById('nexus-list');
+    const createForm = document.getElementById('nexus-create-form');
+    const nexusErrorEl = document.getElementById('nexus-error');
+
+    let currentUser = null;
+
+    async function loadMe() {
+      const res = await fetch('/me');
+      const data = await res.json();
+      if (!data.loggedIn) {
+        window.location.href = '/login.html';
+        return;
+      }
+      currentUser = data;
+      currentUsernameEl.textContent = data.displayName || data.username;
+      if (data.isAdmin) {
+        adminPanelBtn.style.display = 'block';
+      }
+      document.getElementById('profile-link').onclick = () => {
+        window.location.href = '/profile.html';
+      };
+    }
+
+    function createAvatarNode(avatarUrl, title) {
+      const avatar = document.createElement('div');
+      avatar.className = 'nexus-avatar';
+      if (avatarUrl) {
+        avatar.style.backgroundImage = `url(${avatarUrl})`;
+      } else {
+        avatar.textContent = (title || 'N').trim().charAt(0).toUpperCase();
+      }
+      return avatar;
+    }
+
+    function renderNexusCard(item) {
+      const card = document.createElement('div');
+      card.className = 'nexus-card';
+
+      const header = document.createElement('div');
+      header.className = 'nexus-card-header';
+
+      const avatar = createAvatarNode(item.avatar_data, item.title);
+
+      const info = document.createElement('div');
+      info.className = 'nexus-info';
+
+      const title = document.createElement('div');
+      title.className = 'nexus-title';
+      title.textContent = item.title;
+
+      const handle = document.createElement('div');
+      handle.className = 'nexus-handle';
+      handle.textContent = `@${item.handle}`;
+
+      const meta = document.createElement('div');
+      meta.className = 'nexus-meta';
+      const authorName = item.author_display_name || item.author_username;
+      meta.textContent = `Автор: ${authorName} · Подписчики: ${item.subscribers_count} · Посты: ${item.posts_count}`;
+
+      info.appendChild(title);
+      info.appendChild(handle);
+      info.appendChild(meta);
+
+      header.appendChild(avatar);
+      header.appendChild(info);
+
+      const desc = document.createElement('div');
+      desc.className = 'nexus-desc';
+      desc.textContent = item.description || 'Без описания';
+
+      const actions = document.createElement('div');
+      actions.className = 'nexus-actions';
+
+      const openBtn = document.createElement('button');
+      openBtn.className = 'btn-secondary';
+      openBtn.textContent = 'Открыть';
+      openBtn.onclick = () => {
+        window.location.href = `/nexus/profile?id=${item.id}`;
+      };
+
+      actions.appendChild(openBtn);
+
+      const role = item.my_role;
+      if (role === 'owner') {
+        const ownerBadge = document.createElement('span');
+        ownerBadge.className = 'nexus-badge';
+        ownerBadge.textContent = 'Владелец';
+        actions.appendChild(ownerBadge);
+      } else {
+        const subBtn = document.createElement('button');
+        subBtn.className = role ? 'btn-ghost' : 'btn-primary';
+        subBtn.textContent = role ? 'Отписаться' : 'Подписаться';
+        subBtn.onclick = async () => {
+          subBtn.disabled = true;
+          try {
+            if (role) {
+              await fetch(`/api/nexus/${item.id}/unsubscribe`, { method: 'POST' });
+            } else {
+              await fetch(`/api/nexus/${item.id}/subscribe`, { method: 'POST' });
+            }
+            await loadNexus();
+          } catch (err) {
+            console.error(err);
+          } finally {
+            subBtn.disabled = false;
+          }
+        };
+        actions.appendChild(subBtn);
+      }
+
+      card.appendChild(header);
+      card.appendChild(desc);
+      card.appendChild(actions);
+
+      return card;
+    }
+
+    async function loadNexus() {
+      nexusListEl.innerHTML = '<div class="nexus-loading">Загрузка...</div>';
+      const res = await fetch('/api/nexus');
+      const data = await res.json();
+      if (!data.ok) {
+        nexusListEl.innerHTML = '<div class="nexus-error">Не удалось загрузить нексусы</div>';
+        return;
+      }
+
+      nexusListEl.innerHTML = '';
+      if (data.nexus.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'nexus-empty';
+        empty.textContent = 'Пока нет нексусов. Создайте первый!';
+        nexusListEl.appendChild(empty);
+        return;
+      }
+
+      data.nexus.forEach((item) => {
+        nexusListEl.appendChild(renderNexusCard(item));
+      });
+    }
+
+    createForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      nexusErrorEl.textContent = '';
+
+      const formData = new FormData(createForm);
+      const res = await fetch('/api/nexus', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        nexusErrorEl.textContent = data.error || 'Не удалось создать нексус';
+        return;
+      }
+
+      createForm.reset();
+      await loadNexus();
+    });
+
+    (async () => {
+      await loadMe();
+      await loadNexus();
+    })();
+  </script>
+</body>
+</html>
