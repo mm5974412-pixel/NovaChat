@@ -58,6 +58,7 @@ async function initDb() {
       password_hash TEXT NOT NULL,
       display_name TEXT,
       avatar_url TEXT,
+      avatar_data TEXT,
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
   `);
@@ -67,6 +68,7 @@ async function initDb() {
     ALTER TABLE users 
     ADD COLUMN IF NOT EXISTS display_name TEXT,
     ADD COLUMN IF NOT EXISTS avatar_url TEXT,
+    ADD COLUMN IF NOT EXISTS avatar_data TEXT,
     ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
   `).catch(() => {
     // Игнорируем ошибки если колонки уже существуют
@@ -288,7 +290,7 @@ app.get("/me", async (req, res) => {
 
   try {
     const result = await pool.query(
-      "SELECT username, display_name, avatar_url, created_at FROM users WHERE id = $1",
+      "SELECT username, display_name, avatar_data, created_at FROM users WHERE id = $1",
       [req.session.user.id]
     );
 
@@ -302,7 +304,7 @@ app.get("/me", async (req, res) => {
       id: req.session.user.id,
       username: user.username,
       displayName: user.display_name,
-      avatarUrl: user.avatar_url,
+      avatarUrl: user.avatar_data,
       registeredAt: user.created_at,
     });
   } catch (err) {
@@ -321,7 +323,7 @@ app.post("/update-profile", upload.single("avatar"), async (req, res) => {
     const { displayName, username } = req.body;
     const userId = req.session.user.id;
     const oldUsername = req.session.user.username;
-    let avatarUrl = null;
+    let avatarData = null;
 
     // Проверяем уникальность нового ника если он изменился
     if (username && username !== oldUsername) {
@@ -346,37 +348,30 @@ app.post("/update-profile", upload.single("avatar"), async (req, res) => {
       }
     }
 
-    // Если загружен новый аватар
+    // Если загружен новый аватар - кодируем в Base64
     if (req.file) {
-      avatarUrl = `/uploads/${req.file.filename}`;
+      const fileBuffer = fs.readFileSync(req.file.path);
+      const base64Data = fileBuffer.toString('base64');
+      const mimeType = req.file.mimetype;
+      avatarData = `data:${mimeType};base64,${base64Data}`;
       
-      // Удаляем старый аватар если он был
-      const oldUser = await pool.query(
-        "SELECT avatar_url FROM users WHERE id = $1",
-        [userId]
-      );
-      
-      if (oldUser.rows[0]?.avatar_url) {
-        const oldPath = path.join(__dirname, "public", oldUser.rows[0].avatar_url);
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
-        }
-      }
+      // Удаляем временный файл
+      fs.unlinkSync(req.file.path);
     }
 
     // Обновляем профиль
     let query, params;
-    if (avatarUrl && username && username !== oldUsername) {
-      query = "UPDATE users SET username = $1, display_name = $2, avatar_url = $3 WHERE id = $4 RETURNING username, display_name, avatar_url";
-      params = [username, displayName || null, avatarUrl, userId];
-    } else if (avatarUrl) {
-      query = "UPDATE users SET display_name = $1, avatar_url = $2 WHERE id = $3 RETURNING username, display_name, avatar_url";
-      params = [displayName || null, avatarUrl, userId];
+    if (avatarData && username && username !== oldUsername) {
+      query = "UPDATE users SET username = $1, display_name = $2, avatar_data = $3 WHERE id = $4 RETURNING username, display_name, avatar_data";
+      params = [username, displayName || null, avatarData, userId];
+    } else if (avatarData) {
+      query = "UPDATE users SET display_name = $1, avatar_data = $2 WHERE id = $3 RETURNING username, display_name, avatar_data";
+      params = [displayName || null, avatarData, userId];
     } else if (username && username !== oldUsername) {
-      query = "UPDATE users SET username = $1, display_name = $2 WHERE id = $3 RETURNING username, display_name, avatar_url";
+      query = "UPDATE users SET username = $1, display_name = $2 WHERE id = $3 RETURNING username, display_name, avatar_data";
       params = [username, displayName || null, userId];
     } else {
-      query = "UPDATE users SET display_name = $1 WHERE id = $2 RETURNING username, display_name, avatar_url";
+      query = "UPDATE users SET display_name = $1 WHERE id = $2 RETURNING username, display_name, avatar_data";
       params = [displayName || null, userId];
     }
 
@@ -391,20 +386,21 @@ app.post("/update-profile", upload.single("avatar"), async (req, res) => {
       userId: userId,
       username: updatedUser.username,
       displayName: updatedUser.display_name,
-      avatarUrl: updatedUser.avatar_url,
+      avatarUrl: updatedUser.avatar_data,
     });
 
     res.json({
       ok: true,
       username: updatedUser.username,
       displayName: updatedUser.display_name,
-      avatarUrl: updatedUser.avatar_url,
+      avatarUrl: updatedUser.avatar_data,
     });
   } catch (err) {
     console.error("Ошибка при обновлении профиля:", err);
     res.status(500).json({ ok: false, error: "Ошибка сервера" });
   }
 });
+
 
 // ======= СПИСОК ЛИЧНЫХ ЧАТОВ =======
 app.get("/chats/list", async (req, res) => {
@@ -423,7 +419,7 @@ app.get("/chats/list", async (req, res) => {
         u.id AS peer_user_id,
         u.username AS peer_username,
         u.display_name AS peer_display_name,
-        u.avatar_url AS peer_avatar_url
+        u.avatar_data AS peer_avatar_url
       FROM chats c
       JOIN chat_members cm_self
         ON cm_self.chat_id = c.id
@@ -872,7 +868,7 @@ app.get("/api/user/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
     const result = await pool.query(
-      "SELECT id, username, display_name, avatar_url FROM users WHERE id = $1",
+      "SELECT id, username, display_name, avatar_data FROM users WHERE id = $1",
       [userId]
     );
 
@@ -886,7 +882,7 @@ app.get("/api/user/:userId", async (req, res) => {
       id: user.id,
       username: user.username,
       displayName: user.display_name,
-      avatarUrl: user.avatar_url,
+      avatarUrl: user.avatar_data,
     });
   } catch (err) {
     console.error("Ошибка при получении информации о пользователе:", err);
