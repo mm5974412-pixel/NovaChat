@@ -931,10 +931,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Есть хотя бы один чат
-    if (chatTitleEl) chatTitleEl.textContent = "Nexora";
-    if (chatSubtitleEl)
-      chatSubtitleEl.textContent =
-        "Выберите чат слева, чтобы начать переписку.";
+    // Не переписываем заголовок если чат уже открыт
+    if (!currentChatId) {
+      if (chatTitleEl) chatTitleEl.textContent = "Nexora";
+      if (chatSubtitleEl)
+        chatSubtitleEl.textContent =
+          "Выберите чат слева, чтобы начать переписку.";
+    }
 
     chats.forEach((chat) => {
       const li = document.createElement("li");
