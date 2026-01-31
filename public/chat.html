@@ -259,7 +259,7 @@
     <div class="nexfery-modal-backdrop"></div>
     <div class="nexfery-modal-content">
       <button id="close-nexfery-btn" class="nexfery-close-btn" title="Закрыть">✕</button>
-      <div id="nexfery-content" class="nexfery-content"></div>
+      <iframe id="nexfery-iframe" src="/nexferies.html" class="nexfery-iframe"></iframe>
     </div>
   </div>
 
@@ -2983,7 +2983,6 @@
   const createMenu = document.getElementById("create-menu");
   const createMenuBackdrop = document.getElementById("create-menu-backdrop");
   const nexferyContainer = document.getElementById("nexfery-container");
-  const nexferyContent = document.getElementById("nexfery-content");
   const closeNexferyBtn = document.getElementById("close-nexfery-btn");
 
   // Открыть меню
@@ -3018,8 +3017,6 @@
       closeCreateMenu();
       // Показываем модальное окно нексферы
       nexferyContainer.style.display = "flex";
-      // Загружаем контент нексферы через iframe
-      loadNexferyContent();
     });
   }
 
@@ -3037,32 +3034,6 @@
         nexferyContainer.style.display = "none";
       }
     });
-  }
-
-  // Загрузить контент нексферы
-  function loadNexferyContent() {
-    // Загружаем HTML нексфер с сервера
-    fetch("/nexferies.html")
-      .then(res => res.text())
-      .then(html => {
-        // Извлекаем body контент
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, "text/html");
-        const appDiv = doc.querySelector(".app");
-        if (appDiv) {
-          nexferyContent.innerHTML = appDiv.innerHTML;
-          // Переинициализируем скрипты нексфер (если нужно)
-          initializeNexferyScripts();
-        }
-      })
-      .catch(err => console.error("Ошибка загрузки нексфер:", err));
-  }
-
-  // Инициализация скриптов внутри нексферы
-  function initializeNexferyScripts() {
-    // Здесь можно добавить логику, которая была в nexferies.html
-    // Например, загрузка нексфер, обработчики кликов и т.д.
-    console.log("Нексферы загружены в модальном окне");
   }
 
   // Закрыть меню при клике на фон
