@@ -418,7 +418,7 @@ app.get("/api/user/:userId", async (req, res) => {
     const userId = req.params.userId;
     
     const result = await pool.query(
-      "SELECT id, username, display_name, avatar_data, bio FROM users WHERE id = $1",
+      "SELECT id, username, display_name, avatar_data, bio, created_at FROM users WHERE id = $1",
       [userId]
     );
     
@@ -434,6 +434,7 @@ app.get("/api/user/:userId", async (req, res) => {
       displayName: user.display_name,
       avatarUrl: user.avatar_data,
       bio: user.bio || "",
+      registeredAt: user.created_at,
     });
   } catch (err) {
     console.error("Ошибка при получении профиля:", err);

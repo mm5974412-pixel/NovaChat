@@ -144,10 +144,29 @@
   <div id="profile-modal" class="profile-modal">
     <div class="profile-modal-content">
       <button class="profile-modal-close" id="profile-close">✕</button>
-      <div class="profile-avatar-container">
-        <div class="profile-avatar" id="profile-avatar"></div>
+      
+      <div class="profile-modal-header">
+        <div class="profile-avatar-container">
+          <div class="profile-avatar" id="profile-avatar"></div>
+        </div>
+        <div class="profile-modal-info">
+          <h2 id="profile-username"></h2>
+          <p class="profile-modal-nick">@<span id="profile-user-nick"></span></p>
+        </div>
       </div>
-      <h2 id="profile-username"></h2>
+
+      <div class="profile-modal-details">
+        <div class="profile-detail-row">
+          <span class="detail-label">📅 Аккаунт создан:</span>
+          <span class="detail-value" id="profile-created-date">—</span>
+        </div>
+      </div>
+
+      <div id="profile-bio-section" class="profile-bio-section" style="display: none;">
+        <h3>📝 О себе</h3>
+        <p id="profile-bio-text"></p>
+      </div>
+
       <div class="profile-actions">
         <button id="profile-block-btn" class="btn-ghost" style="width: 100%;">Заблокировать</button>
         <button id="profile-delete-chat-btn" class="btn-ghost" style="width: 100%; margin-top: 8px;">Удалить чат</button>
@@ -1434,7 +1453,11 @@ document.addEventListener('DOMContentLoaded', function() {
   const profileModal = document.getElementById('profile-modal');
   const profileClose = document.getElementById('profile-close');
   const profileUsername = document.getElementById('profile-username');
+  const profileUserNick = document.getElementById('profile-user-nick');
   const profileAvatar = document.getElementById('profile-avatar');
+  const profileCreatedDate = document.getElementById('profile-created-date');
+  const profileBioSection = document.getElementById('profile-bio-section');
+  const profileBioText = document.getElementById('profile-bio-text');
   const profileBlockBtn = document.getElementById('profile-block-btn');
   const profileDeleteChatBtn = document.getElementById('profile-delete-chat-btn');
 
@@ -1465,6 +1488,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const displayName = data.displayName || data.username || 'Пользователь';
         profileUsername.textContent = displayName;
+        profileUserNick.textContent = data.username;
+        
+        // Отображаем дату создания аккаунта
+        if (data.registeredAt) {
+          const date = new Date(data.registeredAt);
+          profileCreatedDate.textContent = date.toLocaleDateString('ru-RU');
+        } else {
+          profileCreatedDate.textContent = '—';
+        }
+        
+        // Отображаем биографию если она есть
+        if (data.bio && data.bio.trim()) {
+          profileBioText.textContent = data.bio;
+          profileBioSection.style.display = 'block';
+        } else {
+          profileBioSection.style.display = 'none';
+        }
         
         // Отображаем аватар
         if (data.avatarUrl && data.avatarUrl.trim()) {
@@ -1490,6 +1530,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Показываем данные из памяти если загрузка не сработала
         const displayName = currentPeerDisplayName || currentPeerUsername || 'Пользователь';
         profileUsername.textContent = displayName;
+        profileUserNick.textContent = currentPeerUsername || '—';
+        profileCreatedDate.textContent = '—';
+        profileBioSection.style.display = 'none';
         
         if (currentPeerAvatarUrl && currentPeerAvatarUrl.trim()) {
           profileAvatar.style.backgroundImage = `url('${currentPeerAvatarUrl}')`;

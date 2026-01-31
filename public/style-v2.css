@@ -20,13 +20,14 @@
   background: linear-gradient(135deg, #111827 0%, #0f172a 100%);
   border-radius: 28px;
   padding: 40px 32px 32px;
-  min-width: 360px;
-  min-height: 280px;
+  width: 90%;
+  max-width: 420px;
+  max-height: 85vh;
+  overflow-y: auto;
   box-shadow: 0 25px 60px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255, 255, 255, 0.1);
   position: relative;
   display: flex;
   flex-direction: column;
-  align-items: center;
   animation: modalSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   border: 1px solid rgba(37, 99, 235, 0.2);
 }
@@ -81,9 +82,16 @@
   transform: scale(0.95);
 }
 
+.profile-modal-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 24px;
+  gap: 12px;
+}
 
 .profile-avatar-container {
-  margin-bottom: 16px;
   animation: avatarContainerSlideDown 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -96,6 +104,103 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.profile-modal-info h2 {
+  margin: 0;
+  font-size: 22px;
+  color: #e5e7eb;
+  font-weight: 700;
+}
+
+.profile-modal-nick {
+  margin: 0;
+  font-size: 14px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.profile-modal-details {
+  width: 100%;
+  background: rgba(139, 92, 246, 0.08);
+  border-left: 3px solid #8b5cf6;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+.profile-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 13px;
+}
+
+.profile-detail-row:not(:last-child) {
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+  margin-bottom: 8px;
+}
+
+.detail-label {
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+.detail-value {
+  color: #e5e7eb;
+  font-weight: 500;
+}
+
+.profile-bio-section {
+  width: 100%;
+  background: rgba(34, 197, 94, 0.08);
+  border-left: 3px solid #22c55e;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+.profile-bio-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: #86efac;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.profile-bio-section p {
+  margin: 0;
+  font-size: 14px;
+  color: #e5e7eb;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.profile-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.profile-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  border: 3px solid rgba(139, 92, 246, 0.5);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 /* ===== Модальное окно подтверждения (как в Telegram) ===== */
@@ -2631,7 +2736,9 @@ html.light #delete-chat-btn:hover {
 
   .profile-modal-content {
     min-width: 90vw;
+    max-width: 420px;
     padding: 18px 6vw;
+    max-height: 85vh;
   }
 }
 
@@ -2705,7 +2812,9 @@ html.light #delete-chat-btn:hover {
 
   .profile-modal-content {
     min-width: 96vw;
+    max-width: 420px;
     padding: 14px 4vw;
+    max-height: 85vh;
   }
 }
 
