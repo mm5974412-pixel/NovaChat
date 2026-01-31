@@ -1627,7 +1627,15 @@ document.addEventListener('DOMContentLoaded', function() {
   const replyCancel = document.getElementById("reply-cancel");
 
   function getMessagePreview(msg) {
-    if (msg.text && msg.text.trim()) return msg.text.trim();
+    let textContent = msg.text || "";
+    
+    // Если это ответ на сообщение, извлекаем только текст самого сообщения (без блока ответа)
+    if (textContent.startsWith("↩ ")) {
+      const lines = textContent.split("\n");
+      textContent = lines.slice(1).join("\n").trim();
+    }
+    
+    if (textContent && textContent.trim()) return textContent.trim();
     if (msg.sticker || msg.sticker_id) return "Стикер";
     if (msg.fileUrl || msg.file_url) return `Файл: ${msg.fileName || msg.file_name || "файл"}`;
     return "Сообщение";
@@ -1696,7 +1704,15 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function getMessageCopyText(msg) {
-    if (msg.text && msg.text.trim()) return msg.text.trim();
+    let textContent = msg.text || "";
+    
+    // Если это ответ на сообщение, извлекаем только текст самого сообщения (без блока ответа)
+    if (textContent.startsWith("↩ ")) {
+      const lines = textContent.split("\n");
+      textContent = lines.slice(1).join("\n").trim();
+    }
+    
+    if (textContent && textContent.trim()) return textContent.trim();
     if (msg.sticker || msg.sticker_id) return `Стикер: ${msg.sticker || msg.sticker_id}`;
     if (msg.fileUrl || msg.file_url) return msg.fileUrl || msg.file_url;
     return "";
