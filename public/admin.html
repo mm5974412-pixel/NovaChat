@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#020617" />
-  <title>NovaChat — Админ-панель</title>
+  <title>Nexora — Админ-панель</title>
   <link rel="stylesheet" href="/style-v2.css" />
   <style>
     .admin-container {
@@ -469,11 +469,13 @@
       <div class="admin-container">
       <div class="admin-sidebar-title">
         <span>⚙️</span>
-        <span>NovaChat Admin</span>
+        <span>Nexora Admin</span>
       </div>
       <div class="admin-menu">
         <button class="admin-menu-item active" data-section="dashboard">📊 Dashboard</button>
         <button class="admin-menu-item" data-section="users">👥 Пользователи</button>
+        <button class="admin-menu-item" data-section="permissions">🔐 Права доступа</button>
+        <button class="admin-menu-item" data-section="content">📝 Контент</button>
         <button class="admin-menu-item" data-section="chats">💬 Чаты</button>
         <button class="admin-menu-item" data-section="messages">📝 Сообщения</button>
         <button class="admin-menu-item" data-section="settings">⚙️ Настройки</button>
@@ -542,6 +544,111 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- Permissions Section (Выдача прав) -->
+      <div id="permissions" class="content-section">
+        <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1px solid #334155; border-radius: 16px; padding: 24px; margin-bottom: 20px;">
+          <h3 style="color: #e2e8f0; margin-bottom: 16px;">🔐 Управление правами доступа</h3>
+          
+          <div class="form-group">
+            <label class="form-label">Выберите пользователя</label>
+            <select class="form-input" id="permission-user-select" style="cursor: pointer;">
+              <option value="">-- Загрузка --</option>
+            </select>
+          </div>
+
+          <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 16px; margin-top: 20px;">
+            <h4 style="color: #cbd5e1; margin-bottom: 16px;">Права пользователя</h4>
+            
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+              <input type="checkbox" id="perm-admin" style="cursor: pointer;" />
+              <label for="perm-admin" style="color: #cbd5e1; cursor: pointer; margin: 0;">
+                👤 Администратор (полный доступ)
+              </label>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+              <input type="checkbox" id="perm-edit-content" style="cursor: pointer;" />
+              <label for="perm-edit-content" style="color: #cbd5e1; cursor: pointer; margin: 0;">
+                ✏️ Редактирование контента
+              </label>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+              <input type="checkbox" id="perm-delete-messages" style="cursor: pointer;" />
+              <label for="perm-delete-messages" style="color: #cbd5e1; cursor: pointer; margin: 0;">
+                🗑️ Удаление сообщений
+              </label>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <input type="checkbox" id="perm-manage-users" style="cursor: pointer;" />
+              <label for="perm-manage-users" style="color: #cbd5e1; cursor: pointer; margin: 0;">
+                👥 Управление пользователями
+              </label>
+            </div>
+          </div>
+
+          <button class="btn-primary" id="save-permissions-btn" style="display: inline-flex; margin-top: 20px;">💾 Сохранить права</button>
+        </div>
+      </div>
+
+      <!-- Content Section (Изменение контента) -->
+      <div id="content" class="content-section">
+        <div style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border: 1px solid #334155; border-radius: 16px; padding: 24px; margin-bottom: 20px;">
+          <h3 style="color: #e2e8f0; margin-bottom: 16px;">📝 Управление контентом</h3>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+            <!-- Edit Text Content -->
+            <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 16px;">
+              <h4 style="color: #cbd5e1; margin-bottom: 12px;">✏️ Изменить текст</h4>
+              
+              <div class="form-group">
+                <label class="form-label">Раздел</label>
+                <select class="form-input" id="text-section" style="cursor: pointer;">
+                  <option value="">-- Выберите раздел --</option>
+                  <option value="site-name">Название сайта</option>
+                  <option value="main-title">Главный заголовок</option>
+                  <option value="main-description">Описание</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Новый текст</label>
+                <textarea class="form-input" id="text-content" style="resize: vertical; min-height: 100px; font-family: Arial, sans-serif;"></textarea>
+              </div>
+
+              <button class="btn-primary" id="save-text-btn" style="display: inline-flex; width: 100%;">💾 Обновить текст</button>
+            </div>
+
+            <!-- Edit Images -->
+            <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 16px;">
+              <h4 style="color: #cbd5e1; margin-bottom: 12px;">🖼️ Загрузить изображение</h4>
+              
+              <div class="form-group">
+                <label class="form-label">Раздел</label>
+                <select class="form-input" id="image-section" style="cursor: pointer;">
+                  <option value="">-- Выберите раздел --</option>
+                  <option value="logo">Логотип</option>
+                  <option value="banner">Баннер</option>
+                  <option value="icon">Иконка</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Выберите файл</label>
+                <input type="file" id="image-upload" class="form-input" accept="image/*" />
+              </div>
+
+              <div id="image-preview" style="margin: 12px 0; border-radius: 8px; max-width: 100%; display: none;">
+                <img id="preview-img" style="max-width: 100%; border-radius: 8px;" />
+              </div>
+
+              <button class="btn-primary" id="save-image-btn" style="display: inline-flex; width: 100%;">💾 Загрузить</button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -925,6 +1032,172 @@
     document.getElementById('admin-login-btn').addEventListener('click', authenticateAdmin);
     document.getElementById('admin-password').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') authenticateAdmin();
+    });
+
+    // ===== PERMISSIONS SECTION =====
+    // Load users for permissions select
+    function loadPermissionsUsers() {
+      fetch('/admin/users', { cache: 'no-store' })
+        .then(res => res.json())
+        .then(data => {
+          const select = document.getElementById('permission-user-select');
+          select.innerHTML = '<option value="">-- Выберите пользователя --</option>';
+          
+          if (data.users) {
+            data.users.forEach(user => {
+              const option = document.createElement('option');
+              option.value = user.id;
+              option.textContent = `${user.username} (${user.is_admin ? 'Админ' : 'Пользователь'})`;
+              select.appendChild(option);
+            });
+          }
+        });
+    }
+
+    // Load permissions for selected user
+    document.getElementById('permission-user-select').addEventListener('change', async (e) => {
+      const userId = e.target.value;
+      if (!userId) return;
+
+      try {
+        const res = await fetch(`/admin/users/${userId}/permissions`);
+        const data = await res.json();
+        
+        if (data.ok) {
+          document.getElementById('perm-admin').checked = data.permissions.is_admin || false;
+          document.getElementById('perm-edit-content').checked = data.permissions.can_edit_content || false;
+          document.getElementById('perm-delete-messages').checked = data.permissions.can_delete_messages || false;
+          document.getElementById('perm-manage-users').checked = data.permissions.can_manage_users || false;
+        }
+      } catch (err) {
+        console.error('Error loading permissions:', err);
+      }
+    });
+
+    // Save permissions
+    document.getElementById('save-permissions-btn').addEventListener('click', async () => {
+      const userId = document.getElementById('permission-user-select').value;
+      if (!userId) {
+        alert('Выберите пользователя');
+        return;
+      }
+
+      const permissions = {
+        is_admin: document.getElementById('perm-admin').checked,
+        can_edit_content: document.getElementById('perm-edit-content').checked,
+        can_delete_messages: document.getElementById('perm-delete-messages').checked,
+        can_manage_users: document.getElementById('perm-manage-users').checked
+      };
+
+      try {
+        const res = await fetch(`/admin/users/${userId}/permissions`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(permissions)
+        });
+        
+        const data = await res.json();
+        if (data.ok) {
+          alert('✓ Права успешно обновлены');
+          loadPermissionsUsers();
+        } else {
+          alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+        }
+      } catch (err) {
+        alert('Ошибка при сохранении: ' + err.message);
+      }
+    });
+
+    // ===== CONTENT SECTION =====
+    // Image preview
+    document.getElementById('image-upload').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const preview = document.getElementById('image-preview');
+        const img = document.getElementById('preview-img');
+        img.src = event.target.result;
+        preview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Save text content
+    document.getElementById('save-text-btn').addEventListener('click', async () => {
+      const section = document.getElementById('text-section').value;
+      const content = document.getElementById('text-content').value;
+
+      if (!section || !content) {
+        alert('Выберите раздел и введите текст');
+        return;
+      }
+
+      try {
+        const res = await fetch('/admin/content/text', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ section, content })
+        });
+
+        const data = await res.json();
+        if (data.ok) {
+          alert('✓ Текст успешно обновлен');
+          document.getElementById('text-content').value = '';
+        } else {
+          alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+        }
+      } catch (err) {
+        alert('Ошибка при сохранении: ' + err.message);
+      }
+    });
+
+    // Save image content
+    document.getElementById('save-image-btn').addEventListener('click', async () => {
+      const section = document.getElementById('image-section').value;
+      const fileInput = document.getElementById('image-upload');
+      const file = fileInput.files[0];
+
+      if (!section || !file) {
+        alert('Выберите раздел и файл изображения');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('section', section);
+      formData.append('image', file);
+
+      try {
+        const res = await fetch('/admin/content/image', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await res.json();
+        if (data.ok) {
+          alert('✓ Изображение успешно загружено');
+          document.getElementById('image-upload').value = '';
+          document.getElementById('image-preview').style.display = 'none';
+        } else {
+          alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+        }
+      } catch (err) {
+        alert('Ошибка при загрузке: ' + err.message);
+      }
+    });
+
+    // Override menu navigation to load permissions users
+    const originalMenuClick = document.querySelectorAll('.admin-menu-item')[0].onclick;
+    document.querySelectorAll('.admin-menu-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const section = btn.dataset.section;
+        
+        // Load data for permissions section
+        if (section === 'permissions') {
+          setTimeout(() => loadPermissionsUsers(), 100);
+        }
+      });
     });
   </script>
 </body>

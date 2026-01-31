@@ -1354,6 +1354,136 @@ app.delete("/admin/messages/:messageId", checkAdmin, async (req, res) => {
   }
 });
 
+// ===== ADMIN PERMISSIONS ENDPOINTS =====
+
+// Получить права пользователя
+app.get("/admin/users/:userId/permissions", checkAdmin, async (req, res) => {
+  try {
+    const result = await pool.query(
+      "SELECT is_admin FROM users WHERE id = $1",
+      [req.params.userId]
+    );
+    
+    if (!result.rows[0]) {
+      return res.status(404).json({ ok: false, error: "User not found" });
+    }
+
+    res.json({
+      ok: true,
+      permissions: {
+        is_admin: result.rows[0].is_admin || false,
+        can_edit_content: result.rows[0].is_admin || false,
+        can_delete_messages: result.rows[0].is_admin || false,
+        can_manage_users: result.rows[0].is_admin || false
+      }
+    });
+  } catch (err) {
+    console.error("Permissions fetch error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+// Обновить права пользователя
+app.put("/admin/users/:userId/permissions", checkAdmin, async (req, res) => {
+  const { is_admin } = req.body;
+  
+  try {
+    await pool.query(
+      "UPDATE users SET is_admin = $1 WHERE id = $2",
+      [is_admin || false, req.params.userId]
+    );
+    
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Permissions update error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+// ===== ADMIN CONTENT ENDPOINTS =====
+
+// Обновить текстовый контент
+app.post("/admin/content/text", checkAdmin, async (req, res) => {
+  const { section, content } = req.body;
+  
+  if (!section || !content) {
+    return res.status(400).json({ ok: false, error: "Missing fields" });
+  }
+
+  try {
+    // Сохраняем контент в БД или файл
+    const contentPath = path.join(__dirname, 'public', 'content.json');
+    let data = {};
+    
+    if (fs.existsSync(contentPath)) {
+      data = JSON.parse(fs.readFileSync(contentPath, 'utf8'));
+    }
+    
+    data[section] = content;
+    fs.writeFileSync(contentPath, JSON.stringify(data, null, 2));
+    
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Content save error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+// Загрузить изображение контента
+app.post("/admin/content/image", checkAdmin, multer({ storage: multer.memoryStorage() }).single('image'), async (req, res) => {
+  const { section } = req.body;
+  
+  if (!section || !req.file) {
+    return res.status(400).json({ ok: false, error: "Missing fields" });
+  }
+
+  try {
+    const uploadsDir = path.join(__dirname, 'public', 'uploads', 'content');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const filename = `${section}-${Date.now()}.${req.file.mimetype.split('/')[1]}`;
+    const filepath = path.join(uploadsDir, filename);
+    
+    fs.writeFileSync(filepath, req.file.buffer);
+    
+    // Сохраняем ссылку в БД
+    const contentPath = path.join(__dirname, 'public', 'content.json');
+    let data = {};
+    
+    if (fs.existsSync(contentPath)) {
+      data = JSON.parse(fs.readFileSync(contentPath, 'utf8'));
+    }
+    
+    if (!data.images) data.images = {};
+    data.images[section] = `/uploads/content/${filename}`;
+    fs.writeFileSync(contentPath, JSON.stringify(data, null, 2));
+    
+    res.json({ ok: true, url: `/uploads/content/${filename}` });
+  } catch (err) {
+    console.error("Image upload error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+// Получить контент
+app.get("/admin/content", checkAdmin, async (req, res) => {
+  try {
+    const contentPath = path.join(__dirname, 'public', 'content.json');
+    let data = {};
+    
+    if (fs.existsSync(contentPath)) {
+      data = JSON.parse(fs.readFileSync(contentPath, 'utf8'));
+    }
+    
+    res.json({ ok: true, content: data });
+  } catch (err) {
+    console.error("Content fetch error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
 // ======= ЗАПУСК СЕРВЕРА =======
 server.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
