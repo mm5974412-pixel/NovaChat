@@ -3322,10 +3322,10 @@ html.light .sticker-item:hover {
   animation-delay: 0.4s;
 }
 
-.btn-primary,
-.btn-secondary {
+.nexus-form-actions .btn-primary,
+.nexus-form-actions .btn-secondary {
   flex: 1;
-  padding: 12px 20px;
+  padding: 10px 16px;
   border: none;
   border-radius: 10px;
   font-size: 14px;
@@ -3336,38 +3336,39 @@ html.light .sticker-item:hover {
   letter-spacing: 0.5px;
 }
 
-.btn-primary {
+.nexus-form-actions .btn-primary {
   background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
   color: white;
   box-shadow: 0 8px 16px rgba(139, 92, 246, 0.3);
 }
 
-.btn-primary:hover {
+.nexus-form-actions .btn-primary:hover {
   background: linear-gradient(135deg, #a78bfa 0%, #c4b5fd 100%);
   box-shadow: 0 12px 24px rgba(139, 92, 246, 0.5);
   transform: translateY(-2px);
 }
 
-.btn-primary:active {
+.nexus-form-actions .btn-primary:active {
   transform: translateY(0);
   box-shadow: 0 4px 8px rgba(139, 92, 246, 0.3);
 }
 
-.btn-secondary {
+.nexus-form-actions .btn-secondary {
   background: rgba(148, 163, 184, 0.1);
   color: #cbd5e1;
   border: 1.5px solid rgba(148, 163, 184, 0.3);
 }
 
-.btn-secondary:hover {
+.nexus-form-actions .btn-secondary:hover {
   background: rgba(148, 163, 184, 0.2);
   border-color: rgba(148, 163, 184, 0.6);
   color: #e2e8f0;
   transform: translateY(-2px);
 }
 
-.btn-secondary:active {
+.nexus-form-actions .btn-secondary:active {
   transform: translateY(0);
+  box-shadow: 0 4px 8px rgba(148, 163, 184, 0.1);
 }
 
 .btn-cancel {
