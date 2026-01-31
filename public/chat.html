@@ -1514,6 +1514,11 @@
       const text = input.value.trim();
       if (!text) return;
 
+      // Если мы в режиме нексуса, не проверяем currentChatId
+      if (currentNexusView) {
+        return;
+      }
+
       const replyPrefix = currentReply
         ? `↩ ${currentReply.author}: ${currentReply.text}`
         : "";
