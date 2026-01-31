@@ -66,6 +66,7 @@ async function initDb() {
   // Добавляем новые колонки если их нет (миграция)
   await pool.query(`
     ALTER TABLE users 
+    ADD COLUMN IF NOT EXISTS email TEXT UNIQUE,
     ADD COLUMN IF NOT EXISTS display_name TEXT,
     ADD COLUMN IF NOT EXISTS avatar_url TEXT,
     ADD COLUMN IF NOT EXISTS avatar_data TEXT,
