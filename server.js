@@ -1327,7 +1327,9 @@ app.post("/api/block-user/:userId", async (req, res) => {
       "SELECT username, display_name FROM users WHERE id = $1",
       [blockerId]
     );
-    const blockerName = blockerInfo.rows[0]?.display_name || blockerInfo.rows[0]?.username;
+    const blockerName = blockerInfo.rows.length > 0 
+      ? (blockerInfo.rows[0].display_name || blockerInfo.rows[0].username)
+      : 'Пользователь';
 
     // Найдём чат между пользователями и сохраним системное сообщение
     const chatResult = await pool.query(
@@ -1397,7 +1399,9 @@ app.post("/api/unblock-user/:userId", async (req, res) => {
       "SELECT username, display_name FROM users WHERE id = $1",
       [blockerId]
     );
-    const blockerName = blockerInfo.rows[0]?.display_name || blockerInfo.rows[0]?.username;
+    const blockerName = blockerInfo.rows.length > 0 
+      ? (blockerInfo.rows[0].display_name || blockerInfo.rows[0].username)
+      : 'Пользователь';
 
     // Найдём чат между пользователями и сохраним системное сообщение
     const chatResult = await pool.query(
