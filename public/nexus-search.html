@@ -269,6 +269,7 @@
     const nexusProfileModalBody = document.getElementById('nexus-profile-modal-body');
 
     let searchTimeout;
+    let searchAbortController = null;
 
     async function loadMe() {
       const res = await fetch('/me');
@@ -285,6 +286,11 @@
 
     async function performSearch(query) {
       if (!query.trim()) {
+        // Отменяем предыдущий запрос если он еще в процессе
+        if (searchAbortController) {
+          searchAbortController.abort();
+          searchAbortController = null;
+        }
         searchResults.innerHTML = `
           <div class="nexus-search-empty">
             <div class="nexus-search-empty-icon">🔍</div>
@@ -294,8 +300,11 @@
         return;
       }
 
-      // Сохраняем текущий query чтобы проверить актуальность результатов
-      const currentQuery = query;
+      // Отменяем предыдущий запрос если он еще в процессе
+      if (searchAbortController) {
+        searchAbortController.abort();
+      }
+      searchAbortController = new AbortController();
 
       searchResults.innerHTML = `
         <div class="nexus-search-loading">
@@ -305,13 +314,10 @@
       `;
 
       try {
-        const res = await fetch(`/api/nexus/search/all?q=${encodeURIComponent(query)}`);
+        const res = await fetch(`/api/nexus/search/all?q=${encodeURIComponent(query)}`, {
+          signal: searchAbortController.signal
+        });
         const data = await res.json();
-
-        // Проверяем, что поиск еще актуален (пользователь не изменил строку)
-        if (searchInput.value.trim() !== currentQuery) {
-          return;
-        }
 
         if (!data.ok) {
           searchResults.innerHTML = '<div class="nexus-search-error">Ошибка при поиске</div>';
@@ -334,6 +340,10 @@
           searchResults.appendChild(card);
         });
       } catch (err) {
+        // Игнорируем ошибку если запрос был отменен
+        if (err.name === 'AbortError') {
+          return;
+        }
         console.error(err);
         searchResults.innerHTML = '<div class="nexus-search-error">Ошибка при поиске</div>';
       }
