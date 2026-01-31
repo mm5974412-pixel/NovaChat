@@ -1449,7 +1449,9 @@
           if (data.posts.length === 0) {
             postsContainer.innerHTML = "<div style='text-align: center; color: #9ca3af; padding: 20px;'>Постов еще нет</div>";
           } else {
-            data.posts.forEach((post) => {
+            // Разворачиваем посты так, чтобы старые были сверху, новые снизу
+            const sortedPosts = [...data.posts].reverse();
+            sortedPosts.forEach((post) => {
               const postEl = document.createElement("div");
               postEl.classList.add("message");
               postEl.style.cssText = "padding: 12px; border-radius: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.15); display: flex; flex-direction: column; gap: 8px;";
