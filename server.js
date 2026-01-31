@@ -1171,7 +1171,7 @@ app.post("/api/unblock-user/:userId", async (req, res) => {
 // Endpoint для аутентификации админа
 app.post("/admin/auth", async (req, res) => {
   const { password } = req.body;
-  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123"; // Можно изменить в .env
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "1001qppqA"; // Можно изменить в .env
   
   if (password === ADMIN_PASSWORD) {
     res.json({ ok: true });
