@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nexora — управление нексусом</title>
+  <link rel="stylesheet" href="/style-v2.css" />
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const shouldBeLight = savedTheme === 'light' || (!savedTheme && !prefersDark);
+      if (shouldBeLight) {
+        document.documentElement.classList.add('light');
+      }
+    })();
+  </script>
+  <script src="/theme-toggle.js" defer></script>
+  <style>
+    .nexus-edit-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    @media (max-width: 1024px) {
+      .nexus-edit-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .edit-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .edit-section h3 {
+      margin-top: 0;
+      margin-bottom: 15px;
+      color: var(--primary);
+    }
+
+    .edit-section label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .edit-section input,
+    .edit-section textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--input-bg);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+    }
+
+    .edit-section input:focus,
+    .edit-section textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.1);
+    }
+
+    .avatar-preview {
+      width: 120px;
+      height: 120px;
+      border-radius: 8px;
+      background: var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      margin-bottom: 15px;
+      background-size: cover;
+      background-position: center;
+      color: var(--text);
+    }
+
+    .subscribers-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .subscriber-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .subscriber-item:last-child {
+      border-bottom: none;
+    }
+
+    .subscriber-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .subscriber-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      background-size: cover;
+      background-position: center;
+      color: var(--text);
+    }
+
+    .subscriber-details {
+      flex: 1;
+    }
+
+    .subscriber-name {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .subscriber-username {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .subscriber-delete {
+      padding: 5px 10px;
+      background: var(--danger);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .subscriber-delete:hover {
+      background: var(--danger-hover);
+    }
+
+    .form-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .form-buttons button {
+      flex: 1;
+    }
+
+    .error-message {
+      color: var(--danger);
+      margin-bottom: 15px;
+      padding: 10px;
+      background: rgba(255, 0, 0, 0.1);
+      border-radius: 4px;
+    }
+
+    .success-message {
+      color: var(--success);
+      margin-bottom: 15px;
+      padding: 10px;
+      background: rgba(0, 255, 0, 0.1);
+      border-radius: 4px;
+    }
+
+    .handle-input-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .handle-input-group input {
+      flex: 1;
+      margin-bottom: 15px;
+    }
+
+    .handle-prefix {
+      padding: 10px 0;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-circle">✨</div>
+        <div class="logo-text">
+          <div class="logo-name">Nexora</div>
+          <div class="logo-subtitle">управление нексусом</div>
+        </div>
+      </div>
+
+      <div class="current-user" id="profile-link" style="cursor: pointer;">
+        <span class="current-user-label">Вы:</span>
+        <span class="current-user-name" id="current-username">...</span>
+      </div>
+
+      <button id="theme-toggle" class="theme-toggle" style="width: 100%; margin-bottom: 10px;">🌙</button>
+
+      <a
+        id="back-link"
+        href="#"
+        class="btn-secondary"
+        style="width: 100%; margin: 6px 0; text-align: center; text-decoration: none;"
+      >
+        ← Назад к нексусу
+      </a>
+
+      <a
+        href="/nexus"
+        class="btn-secondary"
+        style="width: 100%; margin: 6px 0; text-align: center; text-decoration: none;"
+      >
+        📋 К нексусам
+      </a>
+    </aside>
+
+    <main class="chat-main">
+      <div class="chat-main-header">
+        <div class="chat-main-top">
+          <div class="chat-main-titles">
+            <div class="chat-main-title">⚙️ Управление нексусом</div>
+            <div class="chat-main-subtitle" id="nexus-subtitle">Редактирование и управление</div>
+          </div>
+        </div>
+      </div>
+
+      <section class="nexus-edit-container">
+        <div class="edit-section">
+          <h3>Информация о нексусе</h3>
+          <div id="edit-error" class="error-message" style="display: none;"></div>
+          <div id="edit-success" class="success-message" style="display: none;"></div>
+
+          <form id="nexus-edit-form">
+            <label>Название</label>
+            <input type="text" id="edit-title" placeholder="Название нексуса" required />
+
+            <label>Ник (латиница)</label>
+            <div class="handle-input-group">
+              <span class="handle-prefix">@</span>
+              <input type="text" id="edit-handle" placeholder="nexus_id" required />
+            </div>
+
+            <label>Описание</label>
+            <textarea id="edit-description" rows="4" placeholder="Описание нексуса"></textarea>
+
+            <label>Аватар</label>
+            <div class="avatar-preview" id="avatar-preview"></div>
+            <input type="file" id="edit-avatar" accept="image/*" />
+
+            <div class="form-buttons">
+              <button type="submit" class="btn-primary">💾 Сохранить</button>
+              <button type="button" class="btn-secondary" onclick="goBack()">Отмена</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="edit-section">
+          <h3>Подписчики</h3>
+          <div id="subscribers-count" style="margin-bottom: 15px; color: var(--text-secondary); font-size: 14px;"></div>
+          <div class="subscribers-list" id="subscribers-list">
+            <div style="text-align: center; color: var(--text-secondary); padding: 20px;">Загрузка...</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const nexusId = params.get('id');
+
+    let currentUser = null;
+    let currentNexus = null;
+    let selectedFile = null;
+
+    function goBack() {
+      window.location.href = `/nexus/profile?id=${nexusId}`;
+    }
+
+    async function loadMe() {
+      const res = await fetch('/me');
+      const data = await res.json();
+      if (!data.loggedIn) {
+        window.location.href = '/login.html';
+        return;
+      }
+      currentUser = data;
+      document.getElementById('current-username').textContent = data.displayName || data.username;
+      document.getElementById('profile-link').onclick = () => {
+        window.location.href = '/profile.html';
+      };
+    }
+
+    async function loadNexus() {
+      if (!nexusId) {
+        document.querySelector('.chat-main-titles').innerHTML = '<div class="nexus-error">Нексус не найден</div>';
+        return;
+      }
+
+      const res = await fetch(`/api/nexus/${nexusId}`);
+      const data = await res.json();
+      if (!data.ok) {
+        document.querySelector('.chat-main-titles').innerHTML = `<div class="nexus-error">${data.error || 'Нексус не найден'}</div>`;
+        return;
+      }
+
+      currentNexus = data.nexus;
+
+      // Проверяем, что пользователь владелец
+      if (currentNexus.author_id !== currentUser.id) {
+        window.location.href = `/nexus/profile?id=${nexusId}`;
+        return;
+      }
+
+      document.getElementById('nexus-subtitle').textContent = `@${currentNexus.handle}`;
+      document.getElementById('back-link').href = `/nexus/profile?id=${nexusId}`;
+
+      // Загружаем форму
+      document.getElementById('edit-title').value = currentNexus.title;
+      document.getElementById('edit-handle').value = currentNexus.handle;
+      document.getElementById('edit-description').value = currentNexus.description || '';
+
+      if (currentNexus.avatar_data) {
+        document.getElementById('avatar-preview').style.backgroundImage = `url(${currentNexus.avatar_data})`;
+      } else {
+        document.getElementById('avatar-preview').textContent = (currentNexus.title || 'N').trim().charAt(0).toUpperCase();
+      }
+
+      await loadSubscribers();
+    }
+
+    async function loadSubscribers() {
+      try {
+        const res = await fetch(`/api/nexus/${nexusId}/subscribers`);
+        const data = await res.json();
+        if (!data.ok) {
+          document.getElementById('subscribers-list').innerHTML = `<div class="nexus-error">${data.error}</div>`;
+          return;
+        }
+
+        const subscribers = data.subscribers;
+        document.getElementById('subscribers-count').textContent = `Всего подписчиков: ${subscribers.length}`;
+
+        const listEl = document.getElementById('subscribers-list');
+        listEl.innerHTML = '';
+
+        if (subscribers.length === 0) {
+          listEl.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 20px;">Подписчиков нет</div>';
+          return;
+        }
+
+        subscribers.forEach(sub => {
+          const item = document.createElement('div');
+          item.className = 'subscriber-item';
+
+          const info = document.createElement('div');
+          info.className = 'subscriber-info';
+
+          const avatar = document.createElement('div');
+          avatar.className = 'subscriber-avatar';
+          if (sub.avatar_data) {
+            avatar.style.backgroundImage = `url(${sub.avatar_data})`;
+          } else {
+            avatar.textContent = (sub.display_name || sub.username || 'U').trim().charAt(0).toUpperCase();
+          }
+
+          const details = document.createElement('div');
+          details.className = 'subscriber-details';
+
+          const name = document.createElement('div');
+          name.className = 'subscriber-name';
+          name.textContent = sub.display_name || sub.username;
+
+          const username = document.createElement('div');
+          username.className = 'subscriber-username';
+          username.textContent = `@${sub.username}`;
+
+          details.appendChild(name);
+          details.appendChild(username);
+          info.appendChild(avatar);
+          info.appendChild(details);
+
+          if (sub.role !== 'owner') {
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'subscriber-delete';
+            deleteBtn.textContent = 'Удалить';
+            deleteBtn.onclick = async () => {
+              if (confirm(`Удалить ${sub.display_name || sub.username} из подписчиков?`)) {
+                await deleteSubscriber(sub.user_id);
+              }
+            };
+            item.appendChild(deleteBtn);
+          }
+
+          item.appendChild(info);
+          listEl.appendChild(item);
+        });
+      } catch (err) {
+        console.error(err);
+        document.getElementById('subscribers-list').innerHTML = '<div class="nexus-error">Ошибка загрузки подписчиков</div>';
+      }
+    }
+
+    async function deleteSubscriber(userId) {
+      try {
+        const res = await fetch(`/api/nexus/${nexusId}/subscribers/${userId}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (data.ok) {
+          await loadSubscribers();
+        } else {
+          alert(data.error || 'Ошибка при удалении');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Ошибка при удалении подписчика');
+      }
+    }
+
+    document.getElementById('edit-avatar').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          document.getElementById('avatar-preview').style.backgroundImage = `url(${event.target.result})`;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    document.getElementById('nexus-edit-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const errorEl = document.getElementById('edit-error');
+      const successEl = document.getElementById('edit-success');
+      errorEl.style.display = 'none';
+      successEl.style.display = 'none';
+
+      const title = document.getElementById('edit-title').value.trim();
+      const handle = document.getElementById('edit-handle').value.trim();
+      const description = document.getElementById('edit-description').value.trim();
+
+      if (!title || !handle) {
+        errorEl.textContent = 'Заполните название и ник';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('handle', handle);
+      formData.append('description', description);
+
+      const avatarInput = document.getElementById('edit-avatar');
+      if (avatarInput.files.length > 0) {
+        formData.append('avatar', avatarInput.files[0]);
+      }
+
+      try {
+        const res = await fetch(`/api/nexus/${nexusId}`, {
+          method: 'PATCH',
+          body: formData
+        });
+
+        const data = await res.json();
+        if (!data.ok) {
+          errorEl.textContent = data.error || 'Ошибка при сохранении';
+          errorEl.style.display = 'block';
+          return;
+        }
+
+        successEl.textContent = '✓ Изменения сохранены';
+        successEl.style.display = 'block';
+        
+        await loadNexus();
+      } catch (err) {
+        console.error(err);
+        errorEl.textContent = 'Ошибка сервера';
+        errorEl.style.display = 'block';
+      }
+    });
+
+    (async () => {
+      await loadMe();
+      await loadNexus();
+    })();
+  </script>
+</body>
+</html>

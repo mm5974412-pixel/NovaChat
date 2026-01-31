@@ -192,10 +192,13 @@
         };
         actions.appendChild(subBtn);
       } else {
-        const ownerBadge = document.createElement('span');
-        ownerBadge.className = 'nexus-badge';
-        ownerBadge.textContent = 'Владелец';
-        actions.appendChild(ownerBadge);
+        const editBtn = document.createElement('button');
+        editBtn.className = 'btn-primary';
+        editBtn.textContent = '⚙️ Управление';
+        editBtn.onclick = () => {
+          window.location.href = `/nexus/edit?id=${currentNexus.id}`;
+        };
+        actions.appendChild(editBtn);
       }
 
       wrapper.appendChild(avatar);

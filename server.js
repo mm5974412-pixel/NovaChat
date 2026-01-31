@@ -471,6 +471,13 @@ app.get("/nexus/profile", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "nexus-profile.html"));
 });
 
+app.get("/nexus/edit", (req, res) => {
+  if (!req.session.user) {
+    return res.redirect("/login.html");
+  }
+  res.sendFile(path.join(__dirname, "public", "nexus-edit.html"));
+});
+
 // Статика
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -818,9 +825,10 @@ app.get("/api/nexus", requireAuth, async (req, res) => {
           GROUP BY nexus_id
         ) posts ON posts.nexus_id = n.id
         LEFT JOIN nexus_subscribers ns_me ON ns_me.nexus_id = n.id AND ns_me.user_id = $1
+        WHERE n.author_id = $2 OR ns_me.user_id = $3
         ORDER BY n.created_at DESC
       `,
-      [userId]
+      [userId, userId, userId]
     );
 
     res.json({ ok: true, nexus: result.rows });
@@ -1084,6 +1092,187 @@ app.post("/api/nexus/posts/:postId/comments", requireAuth, async (req, res) => {
     res.json({ ok: true, comment: result.rows[0] });
   } catch (err) {
     console.error("Ошибка при создании комментария:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// ======= УПРАВЛЕНИЕ ПРОФИЛЕМ НЕКСУСА =======
+app.get("/api/nexus/:nexusId/subscribers", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const nexusId = parseInt(req.params.nexusId, 10);
+
+    // Проверяем, что пользователь владелец нексуса
+    const ownerCheck = await pool.query(
+      "SELECT author_id FROM nexus WHERE id = $1",
+      [nexusId]
+    );
+
+    if (ownerCheck.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: "Нексус не найден" });
+    }
+
+    if (ownerCheck.rows[0].author_id !== userId) {
+      return res.status(403).json({ ok: false, error: "Только владелец может управлять подписчиками" });
+    }
+
+    // Получаем всех подписчиков
+    const result = await pool.query(
+      `
+        SELECT
+          ns.user_id,
+          u.username,
+          u.display_name,
+          u.avatar_data,
+          ns.role,
+          ns.created_at
+        FROM nexus_subscribers ns
+        JOIN users u ON u.id = ns.user_id
+        WHERE ns.nexus_id = $1
+        ORDER BY ns.created_at DESC
+      `,
+      [nexusId]
+    );
+
+    res.json({ ok: true, subscribers: result.rows });
+  } catch (err) {
+    console.error("Ошибка при получении подписчиков:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+app.delete("/api/nexus/:nexusId/subscribers/:userId", requireAuth, async (req, res) => {
+  try {
+    const ownerId = req.session.user.id;
+    const nexusId = parseInt(req.params.nexusId, 10);
+    const subscriberId = parseInt(req.params.userId, 10);
+
+    // Проверяем, что пользователь владелец нексуса
+    const ownerCheck = await pool.query(
+      "SELECT author_id FROM nexus WHERE id = $1",
+      [nexusId]
+    );
+
+    if (ownerCheck.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: "Нексус не найден" });
+    }
+
+    if (ownerCheck.rows[0].author_id !== ownerId) {
+      return res.status(403).json({ ok: false, error: "Только владелец может удалять подписчиков" });
+    }
+
+    // Проверяем, что это не сам владелец
+    if (subscriberId === ownerId) {
+      return res.status(400).json({ ok: false, error: "Владелец не может удалить себя" });
+    }
+
+    await pool.query(
+      "DELETE FROM nexus_subscribers WHERE nexus_id = $1 AND user_id = $2",
+      [nexusId, subscriberId]
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Ошибка при удалении подписчика:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+app.patch("/api/nexus/:nexusId", requireAuth, upload.single("avatar"), async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const nexusId = parseInt(req.params.nexusId, 10);
+    const title = (req.body.title || "").trim();
+    const rawHandle = (req.body.handle || "").trim().toLowerCase();
+    const description = (req.body.description || "").trim();
+
+    // Проверяем, что пользователь владелец нексуса
+    const ownerCheck = await pool.query(
+      "SELECT author_id FROM nexus WHERE id = $1",
+      [nexusId]
+    );
+
+    if (ownerCheck.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: "Нексус не найден" });
+    }
+
+    if (ownerCheck.rows[0].author_id !== userId) {
+      return res.status(403).json({ ok: false, error: "Только владелец может редактировать нексус" });
+    }
+
+    // Валидируем длину названия
+    if (title && (title.length < 3 || title.length > 60)) {
+      return res.status(400).json({ ok: false, error: "Название должно быть от 3 до 60 символов" });
+    }
+
+    // Проверяем ник, если изменяется
+    if (rawHandle && !NEXUS_HANDLE_REGEX.test(rawHandle)) {
+      return res.status(400).json({ ok: false, error: "Ник должен быть 5-30 символов, содержать минимум одну латинскую букву" });
+    }
+
+    // Проверяем уникальность нового ника
+    if (rawHandle) {
+      const existingHandle = await pool.query(
+        "SELECT id FROM nexus WHERE handle = $1 AND id != $2",
+        [rawHandle, nexusId]
+      );
+      if (existingHandle.rowCount > 0) {
+        return res.status(400).json({ ok: false, error: "Такой ник нексуса уже занят" });
+      }
+    }
+
+    let avatarData = null;
+    let updateFields = [];
+    let updateValues = [];
+    let paramIndex = 1;
+
+    if (title) {
+      updateFields.push(`title = $${paramIndex++}`);
+      updateValues.push(title);
+    }
+
+    if (rawHandle) {
+      updateFields.push(`handle = $${paramIndex++}`);
+      updateValues.push(rawHandle);
+    }
+
+    if (description || description === "") {
+      updateFields.push(`description = $${paramIndex++}`);
+      updateValues.push(description || null);
+    }
+
+    if (req.file) {
+      const fileBuffer = fs.readFileSync(req.file.path);
+      const base64Data = fileBuffer.toString("base64");
+      const mimeType = req.file.mimetype;
+      avatarData = `data:${mimeType};base64,${base64Data}`;
+      fs.unlinkSync(req.file.path);
+      updateFields.push(`avatar_data = $${paramIndex++}`);
+      updateValues.push(avatarData);
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ ok: false, error: "Не передано ни одного поля для обновления" });
+    }
+
+    updateValues.push(nexusId);
+
+    const query = `
+      UPDATE nexus
+      SET ${updateFields.join(", ")}
+      WHERE id = $${paramIndex}
+      RETURNING id, title, handle, description, avatar_data, author_id, created_at
+    `;
+
+    const result = await pool.query(query, updateValues);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: "Нексус не найден" });
+    }
+
+    res.json({ ok: true, nexus: result.rows[0] });
+  } catch (err) {
+    console.error("Ошибка при обновлении нексуса:", err);
     res.status(500).json({ ok: false, error: "Ошибка сервера" });
   }
 });
