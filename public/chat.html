@@ -1251,6 +1251,8 @@
           item.innerHTML = `<span>👤</span> <span>${user.display_name || user.username}</span>`;
           item.onclick = () => {
             nexusSearchModalEl.style.display = "none";
+            if (nexusSearchInputEl) nexusSearchInputEl.value = "";
+            if (nexusSearchResultsEl) nexusSearchResultsEl.innerHTML = "";
             // Создаем чат с этим пользователем
             fetch("/chats/new", {
               method: "POST",
@@ -1277,6 +1279,8 @@
         item.innerHTML = `<span>🧭</span> <span>${nexus.title}</span> <span style="color: #a78bfa;">@${nexus.handle}</span>`;
         item.onclick = () => {
           nexusSearchModalEl.style.display = "none";
+          if (nexusSearchInputEl) nexusSearchInputEl.value = "";
+          if (nexusSearchResultsEl) nexusSearchResultsEl.innerHTML = "";
           loadChats();
           openNexus(nexus);
         };
