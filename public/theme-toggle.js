@@ -3,11 +3,11 @@
   function updateButton(btn) {
     if (!btn) return;
     if (document.documentElement.classList.contains('light')) {
-      btn.textContent = '☀️';
+      btn.innerHTML = '☀️ <span>Светлая</span>';
       btn.classList.add('sun');
       btn.setAttribute('aria-label', 'Светлая тема');
     } else {
-      btn.textContent = '🌙';
+      btn.innerHTML = '🌙 <span>Темная</span>';
       btn.classList.remove('sun');
       btn.setAttribute('aria-label', 'Тёмная тема');
     }
