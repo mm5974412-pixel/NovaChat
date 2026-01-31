@@ -84,7 +84,29 @@
   </div>
 </div>
 
+  <div id="pinned-message-bar" class="pinned-message-bar" style="display: none;">
+    <div class="pinned-message-content">
+      <span class="pinned-message-icon">📌</span>
+      <span id="pinned-message-text" class="pinned-message-text"></span>
+    </div>
+    <div class="pinned-message-actions">
+      <button type="button" id="pinned-jump" class="pinned-message-btn" title="Перейти">↩</button>
+      <button type="button" id="pinned-clear" class="pinned-message-btn" title="Открепить">✕</button>
+    </div>
+  </div>
+
   <section id="messages" class="chat-main-messages"></section>
+
+  <div id="reply-preview" class="reply-preview" style="display: none;">
+    <div class="reply-preview-content">
+      <span class="reply-preview-icon">↩</span>
+      <div class="reply-preview-text">
+        <div id="reply-preview-author" class="reply-preview-author"></div>
+        <div id="reply-preview-snippet" class="reply-preview-snippet"></div>
+      </div>
+    </div>
+    <button type="button" id="reply-cancel" class="reply-preview-cancel" title="Отменить">✕</button>
+  </div>
 
   <form id="chat-form" class="chat-main-input">
     <input type="file" id="file-input" style="display: none;" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip,.rar" />
@@ -150,10 +172,30 @@
     </div>
   </div>
 
-  <!-- Контекстное меню сообщения для мобильных -->
+  <!-- Контекстное меню сообщения (мобилка и ПК) -->
   <div id="message-context-menu" class="message-context-menu">
     <div class="message-context-content">
-      <button class="message-context-item" data-action="delete">
+      <button class="message-context-item" data-action="pin">
+        <span>📌</span>
+        <span>Закрепить</span>
+      </button>
+      <button class="message-context-item" data-action="edit">
+        <span>✏️</span>
+        <span>Изменить</span>
+      </button>
+      <button class="message-context-item" data-action="copy">
+        <span>📋</span>
+        <span>Копировать</span>
+      </button>
+      <button class="message-context-item" data-action="reply">
+        <span>↩️</span>
+        <span>Ответить</span>
+      </button>
+      <button class="message-context-item" data-action="forward">
+        <span>📤</span>
+        <span>Переслать</span>
+      </button>
+      <button class="message-context-item danger" data-action="delete">
         <span>🗑️</span>
         <span>Удалить</span>
       </button>
@@ -426,10 +468,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const el = document.createElement("div");
     el.classList.add("message");
 
-    // Сохраняем id сообщения в DOM, чтобы потом найти и удалить
+    // Сохраняем данные сообщения в DOM
     if (msg.id) {
       el.dataset.messageId = msg.id;
     }
+    el.dataset.author = msg.author || "";
+    el.dataset.text = msg.text || "";
+    el.dataset.sticker = msg.sticker || msg.sticker_id || "";
+    el.dataset.fileUrl = msg.fileUrl || msg.file_url || "";
+    el.dataset.fileName = msg.fileName || msg.file_name || "";
+    el.dataset.fileType = msg.fileType || msg.file_type || "";
 
     const isMe = msg.author === currentUser?.username;
     if (isMe) {
@@ -509,6 +557,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Если есть подпись к файлу
       if (msg.text && msg.text.trim()) {
         const captionEl = document.createElement("span");
+        captionEl.classList.add("message-caption");
         captionEl.textContent = msg.text;
         captionEl.style.display = "block";
         captionEl.style.marginTop = "6px";
@@ -517,6 +566,7 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
       // Обычное текстовое сообщение
       const textEl = document.createElement("span");
+      textEl.classList.add("message-text");
       textEl.textContent = msg.text;
       el.appendChild(textEl);
     }
@@ -527,57 +577,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
     el.appendChild(timeEl);
 
-    // 🔥 Кнопка удаления только на своих сообщениях
-    if (isMe && msg.id) {
-      const delBtn = document.createElement("button");
-      delBtn.type = "button";
-      delBtn.classList.add("msg-delete-btn");
-      delBtn.textContent = "✕";
+    // Контекстное меню (мобилка: долгое нажатие, ПК: правый клик)
+    if (msg.id) {
+      let longPressTimer;
 
-      delBtn.addEventListener("click", () => {
-        if (!currentChatId) return;
-        showConfirm(
-          "Сообщение будет удалено безвозвратно",
-          "Удалить сообщение?",
-          () => {
-            fetch(`/chats/${currentChatId}/messages/${msg.id}`, {
-          method: "DELETE",
-        })
-          .then((res) => res.json())
-          .then((data) => {
-            if (!data.ok) {
-              showAlert(data.error || "Не удалось удалить сообщение", "Ошибка", "ОК", "danger");
-            }
-            // Само удаление в DOM произойдёт через socket "chat:delete-message"
-          })
-          .catch(() => {
-            showAlert("Произошла ошибка при удалении сообщения", "Ошибка сервера", "ОК", "danger");
-          });
-          },
-          null,
-          "Удалить",
-          "Отмена",
-          "danger"
-        );
+      el.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        showMessageContextMenu(msg, el);
       });
 
-      el.appendChild(delBtn);
-    }
-
-    // Добавляем обработчик долгого нажатия для мобильных
-    if (isMe && msg.id) {
-      let longPressTimer;
-      
       el.addEventListener("touchstart", () => {
         longPressTimer = setTimeout(() => {
-          showMessageContextMenu(msg.id, currentChatId);
-        }, 500); // 500ms долгое нажатие
+          showMessageContextMenu(msg, el);
+        }, 500);
       });
-      
+
       el.addEventListener("touchend", () => {
         clearTimeout(longPressTimer);
       });
-      
+    }
       el.addEventListener("touchmove", () => {
         clearTimeout(longPressTimer);
       });
@@ -691,6 +709,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Загружаем историю сообщений
     loadMessages(chat.id);
+
+    // Загружаем закреплённое сообщение (локально)
+    renderPinnedMessage(chat.id);
+
+    // Сбросить ответ при переключении чата
+    clearReplyPreview();
 
     // Проверяем заблокирован ли я этим пользователем
     checkIfBlocked();
@@ -920,6 +944,11 @@ document.addEventListener('DOMContentLoaded', function() {
       const text = input.value.trim();
       if (!text) return;
 
+      const replyPrefix = currentReply
+        ? `↩ ${currentReply.author}: ${currentReply.text}`
+        : "";
+      const finalText = replyPrefix ? `${replyPrefix}\n${text}` : text;
+
       if (!currentChatId) {
         showAlert("Выберите чат или создайте новый для отправки сообщения", "Чат не выбран", "ОК", "primary");
         return;
@@ -930,7 +959,7 @@ document.addEventListener('DOMContentLoaded', function() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text: finalText }),
       })
         .then((res) => res.json())
         .then((data) => {
@@ -941,6 +970,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
           // Само сообщение придёт через socket "chat:new-message"
           input.value = "";
+          if (currentReply) {
+            clearReplyPreview();
+          }
         })
         .catch(() => {
           showAlert("Произошла ошибка при отправке сообщения", "Ошибка сервера", "ОК", "danger");
@@ -1199,6 +1231,15 @@ document.addEventListener('DOMContentLoaded', function() {
       // Проверяем стал ли чат пустым
       updateEmptyState();
     }
+  });
+
+  // 🔥 Сокет: сообщение было изменено
+  socket.on("chat:edit-message", (payload) => {
+    if (!payload) return;
+    const { id, chatId, text } = payload;
+    if (!currentChatId || currentChatId !== chatId) return;
+    if (!id) return;
+    updateMessageTextInDom(id, text || "");
   });
 
   // Обработка события блокировки пользователя
@@ -1474,54 +1515,303 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // Показать контекстное меню сообщения
-  function showMessageContextMenu(messageId, chatId) {
-    const contextMenu = document.getElementById('message-context-menu');
-    const deleteBtn = contextMenu.querySelector('[data-action="delete"]');
-    
-    // Удаляем старые обработчики
-    const newDeleteBtn = deleteBtn.cloneNode(true);
-    deleteBtn.replaceWith(newDeleteBtn);
-    
-    // Добавляем новый обработчик
-    newDeleteBtn.addEventListener('click', () => {
-      contextMenu.classList.remove('show');
-      
-      if (!chatId) return;
-      showConfirm(
-        "Сообщение будет удалено безвозвратно",
-        "Удалить сообщение?",
-        () => {
-          fetch(`/chats/${chatId}/messages/${messageId}`, {
-            method: "DELETE",
-          })
-            .then((res) => res.json())
-            .then((data) => {
-              if (!data.ok) {
-                showAlert(data.error || "Не удалось удалить сообщение", "Ошибка", "ОК", "danger");
-              }
-            })
-            .catch(() => {
-              showAlert("Произошла ошибка при удалении сообщения", "Ошибка сервера", "ОК", "danger");
-            });
-        },
-        null,
-        "Удалить",
-        "Отмена",
-        "danger"
-      );
-    });
-    
-    contextMenu.classList.add('show');
+  // ======= КОНТЕКСТНОЕ МЕНЮ СООБЩЕНИЯ =======
+  let currentContextMessage = null;
+  let currentContextElement = null;
+  let currentReply = null;
+
+  const pinnedBar = document.getElementById("pinned-message-bar");
+  const pinnedText = document.getElementById("pinned-message-text");
+  const pinnedJump = document.getElementById("pinned-jump");
+  const pinnedClear = document.getElementById("pinned-clear");
+  const replyPreview = document.getElementById("reply-preview");
+  const replyAuthor = document.getElementById("reply-preview-author");
+  const replySnippet = document.getElementById("reply-preview-snippet");
+  const replyCancel = document.getElementById("reply-cancel");
+
+  function getMessagePreview(msg) {
+    if (msg.text && msg.text.trim()) return msg.text.trim();
+    if (msg.sticker || msg.sticker_id) return "Стикер";
+    if (msg.fileUrl || msg.file_url) return `Файл: ${msg.fileName || msg.file_name || "файл"}`;
+    return "Сообщение";
   }
-  
-  // Закрыть контекстное меню при клике на фон
-  document.addEventListener('DOMContentLoaded', () => {
-    const contextMenu = document.getElementById('message-context-menu');
-    contextMenu?.addEventListener('click', (e) => {
+
+  function showReplyPreview(msg) {
+    currentReply = {
+      id: msg.id,
+      author: msg.author || "",
+      text: getMessagePreview(msg),
+    };
+    replyAuthor.textContent = currentReply.author || "Собеседник";
+    replySnippet.textContent = currentReply.text;
+    replyPreview.style.display = "flex";
+  }
+
+  function clearReplyPreview() {
+    currentReply = null;
+    replyPreview.style.display = "none";
+    replyAuthor.textContent = "";
+    replySnippet.textContent = "";
+  }
+
+  function setPinnedMessage(chatId, msg) {
+    if (!chatId || !msg?.id) return;
+    const data = {
+      id: msg.id,
+      author: msg.author || "",
+      text: getMessagePreview(msg),
+    };
+    localStorage.setItem(`pinned:${chatId}`, JSON.stringify(data));
+    renderPinnedMessage(chatId);
+  }
+
+  function clearPinnedMessage(chatId) {
+    if (!chatId) return;
+    localStorage.removeItem(`pinned:${chatId}`);
+    renderPinnedMessage(chatId);
+  }
+
+  function renderPinnedMessage(chatId) {
+    if (!chatId || !pinnedBar) return;
+    const raw = localStorage.getItem(`pinned:${chatId}`);
+    if (!raw) {
+      pinnedBar.style.display = "none";
+      return;
+    }
+    try {
+      const data = JSON.parse(raw);
+      pinnedText.textContent = `${data.author ? data.author + ": " : ""}${data.text}`;
+      pinnedBar.style.display = "flex";
+      pinnedBar.dataset.messageId = data.id;
+    } catch {
+      pinnedBar.style.display = "none";
+    }
+  }
+
+  function scrollToMessage(messageId) {
+    if (!messageId || !messagesDiv) return;
+    const el = messagesDiv.querySelector(`[data-message-id="${messageId}"]`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("message-highlight");
+      setTimeout(() => el.classList.remove("message-highlight"), 1200);
+    }
+  }
+
+  function getMessageCopyText(msg) {
+    if (msg.text && msg.text.trim()) return msg.text.trim();
+    if (msg.sticker || msg.sticker_id) return `Стикер: ${msg.sticker || msg.sticker_id}`;
+    if (msg.fileUrl || msg.file_url) return msg.fileUrl || msg.file_url;
+    return "";
+  }
+
+  function showMessageContextMenu(msg, element) {
+    const contextMenu = document.getElementById("message-context-menu");
+    const editBtn = contextMenu.querySelector('[data-action="edit"]');
+    const deleteBtn = contextMenu.querySelector('[data-action="delete"]');
+
+    currentContextMessage = msg;
+    currentContextElement = element;
+
+    const isMe = msg.author === currentUser?.username;
+    const canEdit = isMe && msg.text && msg.text.trim();
+
+    editBtn.style.display = canEdit ? "flex" : "none";
+    deleteBtn.style.display = isMe ? "flex" : "none";
+
+    contextMenu.classList.add("show");
+  }
+
+  function updateMessageTextInDom(messageId, newText) {
+    if (!messagesDiv) return;
+    const el = messagesDiv.querySelector(`[data-message-id="${messageId}"]`);
+    if (!el) return;
+
+    let textEl = el.querySelector(".message-text");
+    if (!textEl) {
+      textEl = document.createElement("span");
+      textEl.classList.add("message-text");
+      el.appendChild(textEl);
+    }
+    textEl.textContent = newText;
+
+    let editedEl = el.querySelector(".message-edited");
+    if (!editedEl) {
+      editedEl = document.createElement("span");
+      editedEl.classList.add("message-edited");
+      editedEl.textContent = "изменено";
+      el.appendChild(editedEl);
+    }
+
+    el.dataset.text = newText;
+  }
+
+  // Закрыть контекстное меню при клике на фон + обработчики кнопок
+  document.addEventListener("DOMContentLoaded", () => {
+    const contextMenu = document.getElementById("message-context-menu");
+    contextMenu?.addEventListener("click", (e) => {
       if (e.target === contextMenu) {
-        contextMenu.classList.remove('show');
+        contextMenu.classList.remove("show");
       }
+    });
+
+    contextMenu?.querySelectorAll(".message-context-item").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (!currentContextMessage) return;
+        const action = btn.dataset.action;
+        const msg = currentContextMessage;
+
+        contextMenu.classList.remove("show");
+
+        if (action === "pin") {
+          setPinnedMessage(currentChatId, msg);
+          return;
+        }
+
+        if (action === "edit") {
+          showPrompt(
+            "Измените сообщение",
+            "Редактирование",
+            msg.text || "",
+            (newText) => {
+              if (!newText || !newText.trim()) return;
+              fetch(`/chats/${currentChatId}/messages/${msg.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: newText.trim() }),
+              })
+                .then((res) => res.json())
+                .then((data) => {
+                  if (!data.ok) {
+                    showAlert(data.error || "Не удалось изменить сообщение", "Ошибка", "ОК", "danger");
+                    return;
+                  }
+                  updateMessageTextInDom(msg.id, newText.trim());
+                })
+                .catch(() => {
+                  showAlert("Произошла ошибка при изменении сообщения", "Ошибка сервера", "ОК", "danger");
+                });
+            }
+          );
+          return;
+        }
+
+        if (action === "copy") {
+          const textToCopy = getMessageCopyText(msg);
+          if (!textToCopy) return;
+          navigator.clipboard?.writeText(textToCopy).then(
+            () => showAlert("Сообщение скопировано", "Готово", "ОК", "primary"),
+            () => showAlert("Не удалось скопировать", "Ошибка", "ОК", "danger")
+          );
+          return;
+        }
+
+        if (action === "reply") {
+          showReplyPreview(msg);
+          input?.focus();
+          return;
+        }
+
+        if (action === "forward") {
+          const forwardText = getMessageCopyText(msg);
+          if (!forwardText && !(msg.sticker || msg.sticker_id)) {
+            showAlert("Нечего переслать", "Ошибка", "ОК", "danger");
+            return;
+          }
+
+          showPrompt(
+            "Укажите логин пользователя",
+            "Переслать сообщение",
+            "",
+            (username) => {
+              if (!username) return;
+              fetch("/chats/new", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: username.trim() }),
+              })
+                .then((res) => res.json())
+                .then((data) => {
+                  if (!data.ok) {
+                    showAlert(data.error || "Не удалось переслать", "Ошибка", "ОК", "danger");
+                    return;
+                  }
+                  const targetChatId = data.chatId;
+                  if (!targetChatId) return;
+
+                  const payload = {
+                    text: msg.text && msg.text.trim() ? msg.text.trim() : "",
+                    sticker: msg.sticker || msg.sticker_id || null,
+                  };
+
+                  if (!payload.text && !payload.sticker && forwardText) {
+                    payload.text = forwardText;
+                  }
+
+                  fetch(`/chats/${targetChatId}/messages`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                  })
+                    .then((res) => res.json())
+                    .then((result) => {
+                      if (!result.ok) {
+                        showAlert(result.error || "Не удалось переслать", "Ошибка", "ОК", "danger");
+                        return;
+                      }
+                      showAlert("Сообщение переслано", "Готово", "ОК", "primary");
+                    })
+                    .catch(() => {
+                      showAlert("Ошибка при пересылке", "Ошибка", "ОК", "danger");
+                    });
+                })
+                .catch(() => {
+                  showAlert("Ошибка сервера", "Ошибка", "ОК", "danger");
+                });
+            }
+          );
+          return;
+        }
+
+        if (action === "delete") {
+          if (!currentChatId) return;
+          showConfirm(
+            "Сообщение будет удалено безвозвратно",
+            "Удалить сообщение?",
+            () => {
+              fetch(`/chats/${currentChatId}/messages/${msg.id}`, {
+                method: "DELETE",
+              })
+                .then((res) => res.json())
+                .then((data) => {
+                  if (!data.ok) {
+                    showAlert(data.error || "Не удалось удалить сообщение", "Ошибка", "ОК", "danger");
+                  }
+                })
+                .catch(() => {
+                  showAlert("Произошла ошибка при удалении сообщения", "Ошибка сервера", "ОК", "danger");
+                });
+            },
+            null,
+            "Удалить",
+            "Отмена",
+            "danger"
+          );
+        }
+      });
+    });
+
+    pinnedJump?.addEventListener("click", () => {
+      const id = pinnedBar?.dataset?.messageId;
+      if (id) scrollToMessage(id);
+    });
+
+    pinnedClear?.addEventListener("click", () => {
+      clearPinnedMessage(currentChatId);
+    });
+
+    replyCancel?.addEventListener("click", () => {
+      clearReplyPreview();
     });
   });
 
@@ -1616,6 +1906,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!data.ok) {
           showAlert(data.error || "Не удалось отправить стикер", "Ошибка", "ОК", "danger");
           return;
+        }
+        if (currentReply) {
+          clearReplyPreview();
         }
       })
       .catch(() => {

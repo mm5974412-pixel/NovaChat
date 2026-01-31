@@ -1598,6 +1598,120 @@ html.light .chat-main-messages::-webkit-scrollbar-thumb {
   color: #6b7280;
 }
 
+/* ===== Закреплённое сообщение ===== */
+.pinned-message-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  margin: 8px 0 10px;
+  border-radius: 12px;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #dbeafe;
+  font-size: 13px;
+}
+
+.pinned-message-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pinned-message-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pinned-message-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.pinned-message-btn {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #dbeafe;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.pinned-message-btn:hover {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+/* ===== Ответ на сообщение ===== */
+.reply-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  margin: 8px 0 6px;
+  border-radius: 12px;
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: #e0e7ff;
+}
+
+.reply-preview-content {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.reply-preview-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.reply-preview-author {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.reply-preview-snippet {
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 360px;
+}
+
+.reply-preview-cancel {
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: #e0e7ff;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* ===== Служебные метки сообщений ===== */
+.message-edited {
+  margin-left: 6px;
+  font-size: 11px;
+  color: rgba(229, 231, 235, 0.6);
+}
+
+.message-highlight {
+  outline: 2px solid rgba(59, 130, 246, 0.6);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+  transition: box-shadow 0.2s ease;
+}
+
 .input-buttons-container {
   position: absolute;
   right: 8px;
@@ -1744,6 +1858,30 @@ html.light .chat-main-input input {
   background: #f1f5f9;
   border-color: #e2e8f0;
   color: #020617;
+}
+
+html.light .pinned-message-bar {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.2);
+  color: #1e3a8a;
+}
+
+html.light .pinned-message-btn {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.2);
+  color: #1e3a8a;
+}
+
+html.light .reply-preview {
+  background: rgba(139, 92, 246, 0.08);
+  border-color: rgba(139, 92, 246, 0.2);
+  color: #3730a3;
+}
+
+html.light .reply-preview-cancel {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.2);
+  color: #3730a3;
 }
 
 html.light .input-icon-btn {

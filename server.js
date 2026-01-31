@@ -801,6 +801,65 @@ app.delete("/chats/:chatId/messages/:messageId", async (req, res) => {
   }
 });
 
+// ======= РЕДАКТИРОВАНИЕ СООБЩЕНИЯ =======
+app.patch("/chats/:chatId/messages/:messageId", async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ ok: false, error: "Не авторизован" });
+  }
+
+  const userId = req.session.user.id;
+  const chatId = parseInt(req.params.chatId, 10);
+  const messageId = parseInt(req.params.messageId, 10);
+  const { text } = req.body;
+
+  if (!chatId || Number.isNaN(chatId) || !messageId || Number.isNaN(messageId)) {
+    return res.status(400).json({ ok: false, error: "Некорректные параметры" });
+  }
+
+  if (!text || !text.trim()) {
+    return res.status(400).json({ ok: false, error: "Текст сообщения не может быть пустым" });
+  }
+
+  try {
+    const memberCheck = await pool.query(
+      "SELECT 1 FROM chat_members WHERE chat_id = $1 AND user_id = $2 LIMIT 1;",
+      [chatId, userId]
+    );
+
+    if (memberCheck.rowCount === 0) {
+      return res
+        .status(403)
+        .json({ ok: false, error: "У вас нет доступа к этому чату" });
+    }
+
+    const updateResult = await pool.query(
+      `
+      UPDATE messages
+      SET text = $1
+      WHERE id = $2 AND chat_id = $3 AND author_id = $4
+      RETURNING id, text;
+      `,
+      [text.trim(), messageId, chatId, userId]
+    );
+
+    if (updateResult.rowCount === 0) {
+      return res.status(403).json({ ok: false, error: "Нельзя изменить это сообщение" });
+    }
+
+    const row = updateResult.rows[0];
+    io.to(`chat:${chatId}`).emit("chat:edit-message", {
+      id: row.id,
+      chatId,
+      text: row.text,
+    });
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("Ошибка при редактировании сообщения:", err);
+    return res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
 // ======= УДАЛЕНИЕ ЧАТА =======
 app.delete("/chats/:chatId", async (req, res) => {
   if (!req.session.user) {
