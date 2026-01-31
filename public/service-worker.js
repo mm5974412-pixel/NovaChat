@@ -1,4 +1,4 @@
-const CACHE_NAME = "novachat-v2";
+const CACHE_NAME = "nexora-v2";
 
 const ASSETS = [
   "/",
