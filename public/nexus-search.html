@@ -319,6 +319,11 @@
         });
         const data = await res.json();
 
+        // Проверяем, что поле поиска все еще содержит текст (не было очищено)
+        if (!searchInput.value.trim()) {
+          return;
+        }
+
         if (!data.ok) {
           searchResults.innerHTML = '<div class="nexus-search-error">Ошибка при поиске</div>';
           return;
@@ -541,9 +546,14 @@
     searchInput.addEventListener('input', (e) => {
       const query = e.target.value.trim();
       
-      // Если строка пуста, сразу очищаем результаты
+      // Если строка пуста, сразу очищаем результаты и отменяем поиск
       if (!query) {
         clearTimeout(searchTimeout);
+        // Отменяем текущий запрос если он в процессе
+        if (searchAbortController) {
+          searchAbortController.abort();
+          searchAbortController = null;
+        }
         searchResults.innerHTML = `
           <div class="nexus-search-empty">
             <div class="nexus-search-empty-icon">🔍</div>
@@ -562,6 +572,12 @@
     // Очистка поиска
     clearBtn.addEventListener('click', () => {
       searchInput.value = '';
+      clearTimeout(searchTimeout);
+      // Отменяем текущий запрос если он в процессе
+      if (searchAbortController) {
+        searchAbortController.abort();
+        searchAbortController = null;
+      }
       searchResults.innerHTML = `
         <div class="nexus-search-empty">
           <div class="nexus-search-empty-icon">🔍</div>
