@@ -6,13 +6,24 @@
   <title>NovaChat — профиль</title>
   <link rel="stylesheet" href="/style-v2.css" />
   <style>
+    /* Переопределяем глобальные стили для страницы профиля */
+    html {
+      overflow: auto !important;
+      height: auto !important;
+    }
+
+    body {
+      overflow: auto !important;
+      height: auto !important;
+      min-height: 100vh;
+    }
+
     .profile-page {
       display: grid;
       grid-template-columns: 280px 1fr;
       gap: 20px;
       padding: 20px;
       min-height: 100vh;
-      height: auto;
     }
 
     .profile-sidebar {
@@ -119,9 +130,6 @@
       min-height: 0;
       scroll-behavior: smooth;
       -webkit-overflow-scrolling: touch;
-      touch-action: auto;
-      overscroll-behavior-y: auto;
-      overscroll-behavior: auto;
     }
 
     /* Стилизация скроллбара */
