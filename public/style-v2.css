@@ -1579,7 +1579,7 @@ html.light .chat-main-messages::-webkit-scrollbar-thumb {
   min-width: 100px;
   padding: 10px 14px;
   padding-left: 14px;
-  padding-right: 150px;
+  padding-right: 168px;
   border-radius: 999px;
   border: 1px solid #1f2937;
   background: linear-gradient(135deg, rgba(15, 23, 42, 0.6), rgba(20, 30, 48, 0.6));
@@ -1758,15 +1758,15 @@ html.light .chat-main-messages::-webkit-scrollbar-thumb {
 
 /* Позиции кнопок в строке ввода */
 #attach-btn {
-  right: 158px;
+  right: 128px;
 }
 
 #record-btn {
-  right: 118px;
+  right: 88px;
 }
 
 #sticker-btn {
-  right: 78px;
+  right: 48px;
 }
 
 .input-send-btn:hover {
@@ -2262,7 +2262,7 @@ html.light #delete-chat-btn:hover {
   .chat-main-input input {
     font-size: 14px;
     padding: 8px 10px;
-    padding-right: 140px;
+    padding-right: 148px;
   }
 
   .btn-primary,
