@@ -1170,12 +1170,15 @@ document.addEventListener('DOMContentLoaded', function() {
   socket.on("user-profile-updated", (data) => {
     if (!data) return;
     
-    const { userId, displayName, avatarUrl } = data;
+    const { userId, displayName, avatarUrl, username } = data;
     
     // Обновляем данные текущего собеседника если это он
     if (userId === currentPeerUserId) {
       currentPeerDisplayName = displayName;
       currentPeerAvatarUrl = avatarUrl;
+      if (username) {
+        currentPeerUsername = username;
+      }
       
       // Обновляем заголовок чата
       const peerName = displayName || currentPeerUsername;
@@ -1241,6 +1244,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Обновляем переменные актуальными данными
         currentPeerDisplayName = data.displayName;
         currentPeerAvatarUrl = data.avatarUrl;
+        currentPeerUsername = data.username;
 
         const displayName = data.displayName || data.username || 'Пользователь';
         profileUsername.textContent = displayName;

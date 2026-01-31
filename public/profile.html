@@ -608,6 +608,20 @@
             <div class="form-hint">Видно другим пользователям</div>
           </div>
 
+          <!-- Ник -->
+          <div class="form-group">
+            <label for="username-input" class="form-label">Ник пользователя</label>
+            <input 
+              type="text" 
+              id="username-input" 
+              name="username" 
+              placeholder="Ваш ник"
+              maxlength="30"
+              class="form-input"
+            >
+            <div class="form-hint">Буквы, цифры, _ и - (мин. 3 символа). По этому нику вас можно найти.</div>
+          </div>
+
           <button type="submit" class="btn-save">💾 Сохранить</button>
         </form>
       </div>
@@ -741,6 +755,8 @@
     const backBtn = document.getElementById("back-to-chats-btn");
     const deleteAccountBtn = document.getElementById("delete-account-btn");
 
+          const usernameInput = document.getElementById("username-input");
+
     let currentUserData = null;
 
     function displayAvatar(element, avatarUrl, username) {
@@ -816,6 +832,7 @@
             : 'Н/Д';
 
           displayNameInput.value = data.displayName || '';
+          usernameInput.value = data.username || '';
           displayAvatar(profileAvatarSidebar, data.avatarUrl, displayName);
           displayAvatar(avatarPreview, data.avatarUrl, displayName);
         })
@@ -830,6 +847,7 @@
 
       const formData = new FormData();
       formData.append("displayName", displayNameInput.value);
+      formData.append("username", usernameInput.value);
       if (avatarInput.files[0]) {
         formData.append("avatar", avatarInput.files[0]);
       }
@@ -847,9 +865,13 @@
           
           currentUserData.displayName = result.displayName;
           currentUserData.avatarUrl = result.avatarUrl;
+          currentUserData.username = result.username;
           
           const displayName = result.displayName || result.username;
           profileNameSidebar.textContent = displayName;
+          profileLoginSidebar.textContent = result.username;
+          profileUsername.textContent = result.username;
+          usernameInput.value = result.username;
           displayAvatar(profileAvatarSidebar, result.avatarUrl, displayName);
           displayAvatar(avatarPreview, result.avatarUrl, displayName);
           

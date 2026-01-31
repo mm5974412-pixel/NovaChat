@@ -318,9 +318,33 @@ app.post("/update-profile", upload.single("avatar"), async (req, res) => {
   }
 
   try {
-    const { displayName } = req.body;
+    const { displayName, username } = req.body;
     const userId = req.session.user.id;
+    const oldUsername = req.session.user.username;
     let avatarUrl = null;
+
+    // Проверяем уникальность нового ника если он изменился
+    if (username && username !== oldUsername) {
+      const existingUser = await pool.query(
+        "SELECT id FROM users WHERE username = $1",
+        [username]
+      );
+      
+      if (existingUser.rowCount > 0) {
+        return res.status(400).json({ ok: false, error: "Этот ник уже занят" });
+      }
+
+      // Валидация ника
+      if (username.length < 3) {
+        return res.status(400).json({ ok: false, error: "Ник должен быть минимум 3 символа" });
+      }
+      if (username.length > 30) {
+        return res.status(400).json({ ok: false, error: "Ник не должен быть больше 30 символов" });
+      }
+      if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+        return res.status(400).json({ ok: false, error: "Ник может содержать только буквы, цифры, _ и -" });
+      }
+    }
 
     // Если загружен новый аватар
     if (req.file) {
@@ -342,9 +366,15 @@ app.post("/update-profile", upload.single("avatar"), async (req, res) => {
 
     // Обновляем профиль
     let query, params;
-    if (avatarUrl) {
+    if (avatarUrl && username && username !== oldUsername) {
+      query = "UPDATE users SET username = $1, display_name = $2, avatar_url = $3 WHERE id = $4 RETURNING username, display_name, avatar_url";
+      params = [username, displayName || null, avatarUrl, userId];
+    } else if (avatarUrl) {
       query = "UPDATE users SET display_name = $1, avatar_url = $2 WHERE id = $3 RETURNING username, display_name, avatar_url";
       params = [displayName || null, avatarUrl, userId];
+    } else if (username && username !== oldUsername) {
+      query = "UPDATE users SET username = $1, display_name = $2 WHERE id = $3 RETURNING username, display_name, avatar_url";
+      params = [username, displayName || null, userId];
     } else {
       query = "UPDATE users SET display_name = $1 WHERE id = $2 RETURNING username, display_name, avatar_url";
       params = [displayName || null, userId];
