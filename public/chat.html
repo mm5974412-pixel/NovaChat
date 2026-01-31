@@ -1680,13 +1680,6 @@ document.addEventListener('DOMContentLoaded', function() {
       const url = `/api/${endpoint}-user/${currentPeerUserId}`;
       
       try {
-        // Оптимистичное обновление UI - сразу блокируем форму ввода
-        if (!isBlocked) {
-          // Блокируем форму ввода прямо сейчас
-          amBlockedInCurrentChat = true;
-          updateInputBlockedStatus();
-        }
-        
         const res = await fetch(url, { method: 'POST' });
         const data = await res.json();
         
@@ -1698,13 +1691,6 @@ document.addEventListener('DOMContentLoaded', function() {
         profileModal.classList.remove('show');
       } catch (err) {
         console.error('Ошибка блокировки:', err);
-        
-        // Откатываем оптимистичное обновление при ошибке
-        if (!isBlocked) {
-          amBlockedInCurrentChat = false;
-          updateInputBlockedStatus();
-        }
-        
         alert('Ошибка при блокировке пользователя');
       }
     });
