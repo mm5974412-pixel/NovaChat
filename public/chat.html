@@ -1741,25 +1741,31 @@ document.addEventListener('DOMContentLoaded', function() {
       setTimeout(() => {
         const menuWidth = contextContent.offsetWidth || 220;
         const menuHeight = contextContent.offsetHeight || 300;
+        const padding = 20; // отступ от краев экрана
         
         let x = event.clientX + 10; // небольшой отступ от курсора
         let y = event.clientY + 10;
         
         // Проверяем, не выходит ли меню за правую границу
-        if (x + menuWidth > window.innerWidth) {
+        if (x + menuWidth > window.innerWidth - padding) {
           x = event.clientX - menuWidth - 10;
         }
         
         // Проверяем, не выходит ли меню за нижнюю границу
-        if (y + menuHeight > window.innerHeight) {
+        if (y + menuHeight > window.innerHeight - padding) {
           y = event.clientY - menuHeight - 10;
         }
         
         // Не даем уйти за левую границу
-        if (x < 10) x = 10;
+        if (x < padding) x = padding;
         
         // Не даем уйти за верхнюю границу
-        if (y < 10) y = 10;
+        if (y < padding) y = padding;
+        
+        // Убедимся что не выходим за нижнюю границу
+        if (y + menuHeight > window.innerHeight - padding) {
+          y = window.innerHeight - menuHeight - padding;
+        }
         
         // Устанавливаем позицию
         contextContent.style.left = `${x}px`;
