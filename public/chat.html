@@ -1455,19 +1455,143 @@
               const postEl = document.createElement("div");
               postEl.classList.add("message");
               postEl.style.cssText = "padding: 12px; border-radius: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(148, 163, 184, 0.15); display: flex; flex-direction: column; gap: 8px;";
+              
+              const commentsWrap = document.createElement("div");
+              commentsWrap.className = 'nexus-comments';
+              commentsWrap.style.display = 'none';
+
+              const commentsList = document.createElement("div");
+              commentsList.className = 'nexus-comments-list';
+              commentsList.style.cssText = "margin-bottom: 8px; padding: 8px 0; border-top: 1px solid rgba(148, 163, 184, 0.1);";
+
+              const commentForm = document.createElement("form");
+              commentForm.className = 'nexus-comment-form';
+              commentForm.style.cssText = "display: flex; gap: 6px; align-items: flex-end;";
+
+              const canComment = Boolean(currentNexusView?.my_role);
+
+              if (canComment) {
+                const input = document.createElement("input");
+                input.type = 'text';
+                input.placeholder = 'Комментарий...';
+                input.required = true;
+                input.style.cssText = "flex: 1; padding: 6px 8px; border: 1px solid #666; border-radius: 6px; background: rgba(15,23,42,0.6); color: #e5e7eb; font-size: 12px;";
+
+                const submit = document.createElement("button");
+                submit.type = 'submit';
+                submit.className = 'btn-primary';
+                submit.textContent = 'Отправить';
+                submit.style.cssText = "padding: 6px 10px; font-size: 11px;";
+
+                commentForm.appendChild(input);
+                commentForm.appendChild(submit);
+
+                commentForm.addEventListener("submit", async (event) => {
+                  event.preventDefault();
+                  const textValue = input.value.trim();
+                  if (!textValue) return;
+                  submit.disabled = true;
+                  try {
+                    const res = await fetch(`/api/nexus/posts/${post.id}/comments`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ text: textValue })
+                    });
+                    const data = await res.json();
+                    if (data.ok) {
+                      input.value = '';
+                      loadNexusComments(post.id, commentsList);
+                    } else {
+                      alert(data.error || 'Ошибка при добавлении комментария');
+                    }
+                  } catch (err) {
+                    console.error('Ошибка:', err);
+                    alert('Ошибка при отправке комментария');
+                  } finally {
+                    submit.disabled = false;
+                  }
+                });
+              } else {
+                const notice = document.createElement("div");
+                notice.className = 'nexus-comment-notice';
+                notice.style.cssText = "font-size: 12px; color: #9ca3af; padding: 8px 0;";
+                notice.textContent = 'Подпишитесь, чтобы оставлять комментарии.';
+                commentForm.appendChild(notice);
+              }
+
+              commentsWrap.appendChild(commentsList);
+              commentsWrap.appendChild(commentForm);
+
               postEl.innerHTML = `
                 <div style="font-size: 12px; color: #9ca3af;">
                   ${post.author_display_name || post.author_username} · ${new Date(post.created_at).toLocaleString('ru-RU')}
                 </div>
                 <div style="color: #e5e7eb; line-height: 1.5; word-break: break-word;">${escapeHtml(post.text)}</div>
-                <button class="btn-ghost" style="font-size: 12px; align-self: flex-start;" onclick="alert('Комментарии скоро будут доступны')">💬 ${post.comments_count || 0} комментариев</button>
               `;
+
+              const commentsBtn = document.createElement("button");
+              commentsBtn.className = 'btn-ghost';
+              commentsBtn.style.cssText = "font-size: 12px; align-self: flex-start;";
+              commentsBtn.textContent = `💬 ${post.comments_count || 0} комментариев`;
+              
+              commentsBtn.addEventListener('click', async () => {
+                if (commentsWrap.style.display === 'none') {
+                  commentsWrap.style.display = 'block';
+                  await loadNexusComments(post.id, commentsList);
+                } else {
+                  commentsWrap.style.display = 'none';
+                }
+              });
+
+              postEl.appendChild(commentsBtn);
+              postEl.appendChild(commentsWrap);
               postsContainer.appendChild(postEl);
             });
           }
 
           messagesDiv.appendChild(postsContainer);
         }
+      });
+  }
+
+  // Загрузить комментарии к посту
+  function loadNexusComments(postId, container) {
+    container.innerHTML = '<div style="font-size: 12px; color: #9ca3af; padding: 8px 0;">Загрузка комментариев...</div>';
+    fetch(`/api/nexus/posts/${postId}/comments`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.ok) {
+          container.innerHTML = '<div style="font-size: 12px; color: #f87171;">Не удалось загрузить комментарии</div>';
+          return;
+        }
+
+        container.innerHTML = '';
+        if (data.comments.length === 0) {
+          const empty = document.createElement("div");
+          empty.style.cssText = "font-size: 12px; color: #9ca3af; padding: 8px 0;";
+          empty.textContent = 'Комментариев пока нет.';
+          container.appendChild(empty);
+          return;
+        }
+
+        data.comments.forEach((comment) => {
+          const item = document.createElement("div");
+          item.style.cssText = "font-size: 11px; padding: 6px 0; border-bottom: 1px solid rgba(148, 163, 184, 0.1);";
+          const authorName = comment.author_display_name || comment.author_username;
+          const header = document.createElement("div");
+          header.style.cssText = "color: #9ca3af; margin-bottom: 2px;";
+          header.textContent = `${authorName} · ${new Date(comment.created_at).toLocaleString('ru-RU')}`;
+          const text = document.createElement("div");
+          text.style.cssText = "color: #cbd5e1;";
+          text.textContent = comment.text;
+          item.appendChild(header);
+          item.appendChild(text);
+          container.appendChild(item);
+        });
+      })
+      .catch(err => {
+        console.error(err);
+        container.innerHTML = '<div style="font-size: 12px; color: #f87171;">Ошибка загрузки комментариев</div>';
       });
   }
 
