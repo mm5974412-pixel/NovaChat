@@ -2153,7 +2153,7 @@
     }
 
     // Удаляем из списка нексфер в левой панели
-    const nexphereEl = document.querySelector(`.nexspheres-list li[data-nexphere-id="${data.nexphereId}"]`);
+    const nexphereEl = document.querySelector(`#chat-list li[data-nexphere-id="${data.nexphereId}"]`);
     if (nexphereEl) {
       nexphereEl.remove();
       console.log(`[nexphere:deleted] Удалена из списка нексфер`);
@@ -2176,7 +2176,7 @@
     }
 
     // Удаляем из списка нексфер в левой панели
-    const nexphereEl = document.querySelector(`.nexspheres-list li[data-nexphere-id="${data.nexphereId}"]`);
+    const nexphereEl = document.querySelector(`#chat-list li[data-nexphere-id="${data.nexphereId}"]`);
     if (nexphereEl) {
       nexphereEl.remove();
       console.log(`[nexphere:removed] Удалена из списка нексфер`);
@@ -3025,7 +3025,7 @@
           const nexphereIdToDelete = currentNexphereId;
           const wasRemovedInUI = () => {
             if (!nexphereIdToDelete) return false;
-            return !document.querySelector(`.nexspheres-list li[data-nexphere-id="${nexphereIdToDelete}"]`);
+            return !document.querySelector(`#chat-list li[data-nexphere-id="${nexphereIdToDelete}"]`);
           };
           try {
             console.log(`[DELETE nexphere] Sending DELETE request to /api/nexpheres/${nexphereIdToDelete}`);
@@ -3057,7 +3057,7 @@
               chatPanel.style.display = "none";
               
               // Удаляем из списка нексфер
-              const nexphereEl = document.querySelector(`.nexspheres-list li[data-nexphere-id="${nexphereIdToDelete}"]`);
+              const nexphereEl = document.querySelector(`#chat-list li[data-nexphere-id="${nexphereIdToDelete}"]`);
               if (nexphereEl) {
                 nexphereEl.remove();
               }
