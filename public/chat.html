@@ -1348,18 +1348,22 @@
         return;
       }
 
-      // Загружаем пользователей и нексусы
-      const [usersRes, nexusRes] = await Promise.all([
+      // Загружаем пользователей, нексусы и нексферы
+      const [usersRes, nexusRes, nexspheresRes] = await Promise.all([
         fetch(`/api/users?search=${encodeURIComponent(query)}`)
           .then(r => r.json())
           .catch(() => ({ users: [] })),
         fetch(`/api/nexus/search/all?q=${encodeURIComponent(query)}`)
           .then(r => r.json())
-          .catch(() => ({ nexus: [] }))
+          .catch(() => ({ nexus: [] })),
+        fetch(`/api/nexpheres?search=${encodeURIComponent(query)}`)
+          .then(r => r.json())
+          .catch(() => ({ ok: false, nexpheres: [] }))
       ]);
 
       const usersData = usersRes || { users: [] };
       const nexusData = nexusRes || { nexus: [] };
+      const nexspheresData = nexspheresRes || { ok: false, nexpheres: [] };
 
       nexusSearchResultsEl.innerHTML = "";
 
@@ -1420,7 +1424,30 @@
         nexusSearchResultsEl.appendChild(item);
       });
 
-      if (users.length === 0 && nexuses.length === 0) {
+      // Показываем соответствующие нексферы
+      const nexpheres = (nexspheresData.nexpheres || [])
+        .filter(n => n.name && n.name.toLowerCase().includes(query))
+        .slice(0, 5);
+
+      nexpheres.forEach((nexphere) => {
+        const item = document.createElement("div");
+        item.style.cssText = "padding: 8px; border-bottom: 1px solid #333; cursor: pointer; display: flex; align-items: center; gap: 8px;";
+        item.innerHTML = `<span>🔗</span> <span>${nexphere.name}</span>`;
+        item.onclick = () => {
+          nexusSearchModalEl.classList.add("closing");
+          setTimeout(() => {
+            nexusSearchModalEl.style.display = "none";
+            nexusSearchModalEl.classList.remove("closing");
+            if (nexusSearchInputEl) nexusSearchInputEl.value = "";
+            if (nexusSearchResultsEl) nexusSearchResultsEl.innerHTML = "";
+            loadChats();
+            openNexphere(nexphere);
+          }, 200);
+        };
+        nexusSearchResultsEl.appendChild(item);
+      });
+
+      if (users.length === 0 && nexuses.length === 0 && nexpheres.length === 0) {
         nexusSearchResultsEl.innerHTML = "<div style='padding: 10px; color: #999;'>Ничего не найдено</div>";
       }
     });

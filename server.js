@@ -1569,9 +1569,9 @@ app.post("/api/nexpheres", requireAuth, async (req, res) => {
 app.get("/api/nexpheres", requireAuth, async (req, res) => {
   try {
     const userId = req.session.user.id;
+    const search = req.query.search ? `%${req.query.search}%` : null;
 
-    const result = await pool.query(
-      `
+    let query = `
       SELECT
         n.id,
         n.name,
@@ -1586,11 +1586,22 @@ app.get("/api/nexpheres", requireAuth, async (req, res) => {
       JOIN nexphere_members nm ON nm.nexphere_id = n.id
       LEFT JOIN nexphere_messages nxm ON nxm.nexphere_id = n.id
       WHERE nm.user_id = $1
+    `;
+
+    const params = [userId];
+
+    // Добавляем фильтр поиска по названию нексферы
+    if (search) {
+      query += ` AND n.name ILIKE $2`;
+      params.push(search);
+    }
+
+    query += `
       GROUP BY n.id, n.name, n.owner_id, n.created_at, u.username, u.display_name
       ORDER BY n.created_at DESC
-      `,
-      [userId]
-    );
+    `;
+
+    const result = await pool.query(query, params);
 
     res.json({
       ok: true,
