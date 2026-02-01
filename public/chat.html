@@ -2144,11 +2144,8 @@
     // Если это текущая нексфера, закрыть её окно
     if (data.nexphereId === window.currentNexphereId) {
       console.log(`[nexphere:deleted] Закрываю текущую нексферу`);
-      closeNexphereProfileModal();
-      currentNexphereId = null;
       currentNexsphereName = null;
-      nexpherePanel.style.display = "none";
-      chatPanel.style.display = "none";
+      resetNexphereUI();
       showAlert("Нексфера была удалена владельцем", "Нексфера удалена", "ОК", "info");
     }
 
@@ -2167,11 +2164,8 @@
     // Если это текущая нексфера, закрыть её окно
     if (data.nexphereId === window.currentNexphereId) {
       console.log(`[nexphere:removed] Закрываю текущую нексферу`);
-      closeNexphereProfileModal();
-      currentNexphereId = null;
       currentNexsphereName = null;
-      nexpherePanel.style.display = "none";
-      chatPanel.style.display = "none";
+      resetNexphereUI();
       showAlert("Вас удалили из нексферы", "Удалены из нексферы", "ОК", "warning");
     }
 
@@ -3012,6 +3006,16 @@
     nexphereProfileModalEl.style.display = "none";
   }
 
+  function resetNexphereUI() {
+    closeNexphereProfileModal();
+    if (nexphereLeaveBtn) nexphereLeaveBtn.style.display = "none";
+    if (chatTitleEl) chatTitleEl.textContent = "💬 Выберите чат";
+    if (chatSubtitleEl) chatSubtitleEl.textContent = "Нажмите на чат слева, чтобы начать переписку, или создайте новый.";
+    if (messagesDiv) messagesDiv.innerHTML = "";
+    window.currentNexphereId = null;
+    currentNexphereData = null;
+  }
+
   if (nexphereProfileCloseBtn) {
     nexphereProfileCloseBtn.addEventListener("click", closeNexphereProfileModal);
   }
@@ -3022,7 +3026,7 @@
         "Удалить нексферу безвозвратно? Все участники и сообщения будут удалены.",
         "Удаление нексферы",
         async () => {
-          const nexphereIdToDelete = currentNexphereId;
+          const nexphereIdToDelete = window.currentNexphereId || currentNexphereData?.id;
           if (!nexphereIdToDelete) {
             showAlert("Нексфера не выбрана", "Ошибка", "ОК", "danger");
             return;
@@ -3052,20 +3056,9 @@
             // Успешно удалено - очищаем UI
             console.log(`[DELETE nexphere] Deletion successful`);
             
-            // Закрываем модаль первым делом
-            if (nexphereProfileModalEl) {
-              nexphereProfileModalEl.style.display = "none";
-            }
-            
-            // Очищаем глобальные переменные
             socket.emit("nexphere:leave", { nexphereId: nexphereIdToDelete });
-            currentNexphereId = null;
             currentNexsphereName = null;
-            window.currentNexphereId = null;
-            
-            // Скрываем панели
-            if (nexpherePanel) nexpherePanel.style.display = "none";
-            if (chatPanel) chatPanel.style.display = "none";
+            resetNexphereUI();
             
             // Удаляем из списка нексфер (синхронно)
             const nexphereEl = document.querySelector(`#chat-list li[data-nexphere-id="${nexphereIdToDelete}"]`);
