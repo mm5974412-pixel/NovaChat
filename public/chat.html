@@ -3022,22 +3022,34 @@
         "Удалить нексферу безвозвратно? Все участники и сообщения будут удалены.",
         "Удаление нексферы",
         async () => {
+          const nexphereIdToDelete = currentNexphereId;
+          const wasRemovedInUI = () => {
+            if (!nexphereIdToDelete) return false;
+            return !document.querySelector(`.nexspheres-list li[data-nexsphere-id="${nexphereIdToDelete}"]`);
+          };
           try {
-            console.log(`[DELETE nexphere] Sending DELETE request to /api/nexpheres/${currentNexphereId}`);
+            console.log(`[DELETE nexphere] Sending DELETE request to /api/nexpheres/${nexphereIdToDelete}`);
             
-            const response = await fetch(`/api/nexpheres/${currentNexphereId}`, {
+            const response = await fetch(`/api/nexpheres/${nexphereIdToDelete}`, {
               method: "DELETE"
             });
 
             console.log(`[DELETE nexphere] Response status: ${response.status}, ok: ${response.ok}`);
-            
-            const data = await response.json();
+
+            let data = null;
+            const rawText = await response.text();
+            if (rawText) {
+              try {
+                data = JSON.parse(rawText);
+              } catch (e) {
+                console.warn("[DELETE nexphere] Invalid JSON response", e);
+              }
+            }
             console.log(`[DELETE nexphere] Response data:`, data);
 
-            if (response.ok) {
+            if (response.ok || data?.ok) {
               // Сначала очищаем UI
-              socket.emit("nexphere:leave", { nexphereId: currentNexphereId });
-              const nexphereIdToDelete = currentNexphereId;
+              socket.emit("nexphere:leave", { nexphereId: nexphereIdToDelete });
               closeNexphereProfileModal();
               currentNexphereId = null;
               currentNexsphereName = null;
@@ -3059,11 +3071,15 @@
               
               showAlert("Нексфера успешно удалена", "Успех", "ОК", "success");
             } else {
-              console.error(`[DELETE nexphere] Error response:`, data.error);
-              showAlert(data.error || "Ошибка при удалении нексферы", "Ошибка", "ОК", "danger");
+              if (data?.error === "Нексфера не найдена" || wasRemovedInUI()) {
+                return;
+              }
+              console.error(`[DELETE nexphere] Error response:`, data?.error);
+              showAlert(data?.error || "Ошибка при удалении нексферы", "Ошибка", "ОК", "danger");
             }
           } catch (error) {
             console.error("Error deleting nexphere:", error);
+            if (wasRemovedInUI()) return;
             showAlert("Ошибка при удалении нексферы", "Ошибка", "ОК", "danger");
           }
         },
