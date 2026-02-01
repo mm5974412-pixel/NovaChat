@@ -2001,6 +2001,43 @@ app.delete("/api/nexpheres/:nexphereId/members/self", requireAuth, async (req, r
   }
 });
 
+// Удалить нексферу (владелец)
+app.delete("/api/nexpheres/:nexphereId", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const nexphereId = parseInt(req.params.nexphereId, 10);
+
+    if (!nexphereId || Number.isNaN(nexphereId)) {
+      return res.status(400).json({ ok: false, error: "Некорректный nexphereId" });
+    }
+
+    // Проверяем, что пользователь владелец
+    const ownerCheck = await pool.query(
+      "SELECT owner_id FROM nexpheres WHERE id = $1 LIMIT 1",
+      [nexphereId]
+    );
+
+    if (ownerCheck.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: "Нексфера не найдена" });
+    }
+
+    if (ownerCheck.rows[0].owner_id !== userId) {
+      return res.status(403).json({ ok: false, error: "Только владелец может удалить нексферу" });
+    }
+
+    // Удаляем нексферу (каскадно удалятся члены, сообщения и закрепленные сообщения)
+    await pool.query(
+      "DELETE FROM nexpheres WHERE id = $1",
+      [nexphereId]
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Ошибка при удалении нексферы:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
 // Отправить сообщение в нексферу (HTTP API, альтернатива Socket.io)
 app.post("/api/nexpheres/:nexphereId/messages", requireAuth, async (req, res) => {
   try {

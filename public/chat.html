@@ -224,6 +224,7 @@
         <button id="nexphere-add-user" class="btn-primary" type="button">Добавить пользователя</button>
         <button id="nexphere-remove-user" class="btn-ghost" type="button">Удалить пользователя</button>
         <button id="nexphere-permissions" class="btn-secondary" type="button">Разрешения</button>
+        <button id="nexphere-delete" class="btn-ghost" type="button" style="color: #f87171; border-color: #f87171;">Удалить нексферу</button>
       </div>
 
       <div id="nexphere-permissions-panel" style="display: none; margin-top: 12px; border-top: 1px solid rgba(148,163,184,0.2); padding-top: 10px;">
@@ -556,6 +557,7 @@
   const nexphereVisibilityPublicBtn = document.getElementById("nexphere-visibility-public");
   const nexphereVisibilityPrivateBtn = document.getElementById("nexphere-visibility-private");
   const nexphereProfileCloseBtn = document.getElementById("nexphere-profile-close");
+  const nexphereDeleteBtn = document.getElementById("nexphere-delete");
 
   // 🔥 Автоскролл к последнему сообщению
   function scrollMessagesToBottom() {
@@ -2963,6 +2965,34 @@
 
   if (nexphereProfileCloseBtn) {
     nexphereProfileCloseBtn.addEventListener("click", closeNexphereProfileModal);
+  }
+
+  if (nexphereDeleteBtn) {
+    nexphereDeleteBtn.addEventListener("click", async () => {
+      const confirmDelete = showConfirm("Удалить нексферу безвозвратно? Все участники и сообщения будут удалены.");
+      if (!confirmDelete) return;
+
+      try {
+        const response = await fetch(`/api/nexpheres/${currentNexphereId}`, {
+          method: "DELETE"
+        });
+
+        if (response.ok) {
+          socket.emit("nexphere:leave", { nexphereId: currentNexphereId });
+          closeNexphereProfileModal();
+          currentNexphereId = null;
+          currentNexsphereName = null;
+          loadChats();
+          nexpherePanel.style.display = "none";
+          chatPanel.style.display = "none";
+        } else {
+          showAlert("Ошибка при удалении нексферы");
+        }
+      } catch (error) {
+        console.error("Error deleting nexphere:", error);
+        showAlert("Ошибка при удалении нексферы");
+      }
+    });
   }
 
   if (nexphereProfileModalEl) {
