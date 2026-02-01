@@ -1793,6 +1793,19 @@ app.post("/api/nexpheres/:nexphereId/members", requireAuth, async (req, res) => 
       return res.status(403).json({ ok: false, error: "Только владелец может добавлять участников" });
     }
 
+    // Проверяем, что целевой пользователь есть в контактах владельца (в нексоленте)
+    // Проверяем наличие чата между владельцем и целевым пользователем
+    const chatCheck = await pool.query(
+      `SELECT 1 FROM chats 
+       WHERE ((user1_id = $1 AND user2_id = $2) OR (user1_id = $2 AND user2_id = $1))
+       LIMIT 1`,
+      [userId, targetUserId]
+    );
+
+    if (chatCheck.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: "Пользователь не найден в вашей нексоленте" });
+    }
+
     // Добавляем участника
     await pool.query(
       "INSERT INTO nexphere_members (nexphere_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
