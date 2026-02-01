@@ -2968,30 +2968,38 @@
   }
 
   if (nexphereDeleteBtn) {
-    nexphereDeleteBtn.addEventListener("click", async () => {
-      const confirmDelete = showConfirm("Удалить нексферу безвозвратно? Все участники и сообщения будут удалены.");
-      if (!confirmDelete) return;
+    nexphereDeleteBtn.addEventListener("click", () => {
+      showConfirm(
+        "Удалить нексферу безвозвратно? Все участники и сообщения будут удалены.",
+        "Удаление нексферы",
+        async () => {
+          try {
+            const response = await fetch(`/api/nexpheres/${currentNexphereId}`, {
+              method: "DELETE"
+            });
 
-      try {
-        const response = await fetch(`/api/nexpheres/${currentNexphereId}`, {
-          method: "DELETE"
-        });
-
-        if (response.ok) {
-          socket.emit("nexphere:leave", { nexphereId: currentNexphereId });
-          closeNexphereProfileModal();
-          currentNexphereId = null;
-          currentNexsphereName = null;
-          loadChats();
-          nexpherePanel.style.display = "none";
-          chatPanel.style.display = "none";
-        } else {
-          showAlert("Ошибка при удалении нексферы");
-        }
-      } catch (error) {
-        console.error("Error deleting nexphere:", error);
-        showAlert("Ошибка при удалении нексферы");
-      }
+            if (response.ok) {
+              socket.emit("nexphere:leave", { nexphereId: currentNexphereId });
+              closeNexphereProfileModal();
+              currentNexphereId = null;
+              currentNexsphereName = null;
+              loadChats();
+              nexpherePanel.style.display = "none";
+              chatPanel.style.display = "none";
+              showAlert("Нексфера успешно удалена", "Успех", "ОК", "success");
+            } else {
+              showAlert("Ошибка при удалении нексферы", "Ошибка", "ОК", "danger");
+            }
+          } catch (error) {
+            console.error("Error deleting nexphere:", error);
+            showAlert("Ошибка при удалении нексферы", "Ошибка", "ОК", "danger");
+          }
+        },
+        null,
+        "Удалить",
+        "Отмена",
+        "danger"
+      );
     });
   }
 
