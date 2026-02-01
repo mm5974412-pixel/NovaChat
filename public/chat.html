@@ -2974,9 +2974,16 @@
         "Удаление нексферы",
         async () => {
           try {
+            console.log(`[DELETE nexphere] Sending DELETE request to /api/nexpheres/${currentNexphereId}`);
+            
             const response = await fetch(`/api/nexpheres/${currentNexphereId}`, {
               method: "DELETE"
             });
+
+            console.log(`[DELETE nexphere] Response status: ${response.status}, ok: ${response.ok}`);
+            
+            const data = await response.json();
+            console.log(`[DELETE nexphere] Response data:`, data);
 
             if (response.ok) {
               socket.emit("nexphere:leave", { nexphereId: currentNexphereId });
@@ -2988,7 +2995,8 @@
               chatPanel.style.display = "none";
               showAlert("Нексфера успешно удалена", "Успех", "ОК", "success");
             } else {
-              showAlert("Ошибка при удалении нексферы", "Ошибка", "ОК", "danger");
+              console.error(`[DELETE nexphere] Error response:`, data.error);
+              showAlert(data.error || "Ошибка при удалении нексферы", "Ошибка", "ОК", "danger");
             }
           } catch (error) {
             console.error("Error deleting nexphere:", error);

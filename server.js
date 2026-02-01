@@ -2007,7 +2007,10 @@ app.delete("/api/nexpheres/:nexphereId", requireAuth, async (req, res) => {
     const userId = req.session.user.id;
     const nexphereId = parseInt(req.params.nexphereId, 10);
 
+    console.log(`[DELETE /api/nexpheres/:nexphereId] userId=${userId}, nexphereId=${nexphereId}`);
+
     if (!nexphereId || Number.isNaN(nexphereId)) {
+      console.log(`[DELETE /api/nexpheres/:nexphereId] Invalid nexphereId`);
       return res.status(400).json({ ok: false, error: "Некорректный nexphereId" });
     }
 
@@ -2018,19 +2021,22 @@ app.delete("/api/nexpheres/:nexphereId", requireAuth, async (req, res) => {
     );
 
     if (ownerCheck.rowCount === 0) {
+      console.log(`[DELETE /api/nexpheres/:nexphereId] Nexphere not found`);
       return res.status(404).json({ ok: false, error: "Нексфера не найдена" });
     }
 
     if (ownerCheck.rows[0].owner_id !== userId) {
+      console.log(`[DELETE /api/nexpheres/:nexphereId] Not owner - owner_id=${ownerCheck.rows[0].owner_id}, userId=${userId}`);
       return res.status(403).json({ ok: false, error: "Только владелец может удалить нексферу" });
     }
 
     // Удаляем нексферу (каскадно удалятся члены, сообщения и закрепленные сообщения)
-    await pool.query(
+    const result = await pool.query(
       "DELETE FROM nexpheres WHERE id = $1",
       [nexphereId]
     );
 
+    console.log(`[DELETE /api/nexpheres/:nexphereId] Nexphere deleted successfully, rowCount=${result.rowCount}`);
     res.json({ ok: true });
   } catch (err) {
     console.error("Ошибка при удалении нексферы:", err);
