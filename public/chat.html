@@ -208,6 +208,38 @@
     </div>
   </div>
 
+  <!-- Модальное окно профиля нексферы -->
+  <div id="nexphere-profile-modal" class="confirm-modal" style="display: none;">
+    <div class="confirm-modal-backdrop"></div>
+    <div class="confirm-modal-content" style="max-width: 460px;">
+      <div class="confirm-modal-title" id="nexphere-profile-title">Профиль нексферы</div>
+      <div style="margin: 8px 0 12px; color: #cbd5e1;">
+        <strong id="nexphere-profile-name">—</strong>
+      </div>
+      <div style="margin-bottom: 12px; color: #94a3b8; font-size: 12px;">
+        Доступ: <span id="nexphere-profile-visibility">—</span>
+      </div>
+
+      <div id="nexphere-profile-actions" style="display: flex; flex-direction: column; gap: 8px;">
+        <button id="nexphere-add-user" class="btn-primary" type="button">Добавить пользователя</button>
+        <button id="nexphere-remove-user" class="btn-ghost" type="button">Удалить пользователя</button>
+        <button id="nexphere-permissions" class="btn-secondary" type="button">Разрешения</button>
+      </div>
+
+      <div id="nexphere-permissions-panel" style="display: none; margin-top: 12px; border-top: 1px solid rgba(148,163,184,0.2); padding-top: 10px;">
+        <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">Тип нексферы:</div>
+        <div style="display: flex; gap: 8px;">
+          <button id="nexphere-visibility-public" class="btn-primary" type="button">Публичная</button>
+          <button id="nexphere-visibility-private" class="btn-ghost" type="button">Частная</button>
+        </div>
+      </div>
+
+      <div class="confirm-modal-buttons" style="margin-top: 14px;">
+        <button id="nexphere-profile-close" class="confirm-btn confirm-btn-cancel">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Модальное окно подтверждения -->
   <div id="confirm-modal" class="confirm-modal">
     <div class="confirm-modal-backdrop"></div>
@@ -512,6 +544,18 @@
   const nexusProfileModalEl = document.getElementById("nexus-profile-modal");
   const nexusProfileBodyEl = document.getElementById("nexus-profile-body");
   const nexusProfileCloseEl = document.getElementById("nexus-profile-close");
+  const nexphereProfileModalEl = document.getElementById("nexphere-profile-modal");
+  const nexphereProfileTitleEl = document.getElementById("nexphere-profile-title");
+  const nexphereProfileNameEl = document.getElementById("nexphere-profile-name");
+  const nexphereProfileVisibilityEl = document.getElementById("nexphere-profile-visibility");
+  const nexphereProfileActionsEl = document.getElementById("nexphere-profile-actions");
+  const nexphereAddUserBtn = document.getElementById("nexphere-add-user");
+  const nexphereRemoveUserBtn = document.getElementById("nexphere-remove-user");
+  const nexpherePermissionsBtn = document.getElementById("nexphere-permissions");
+  const nexpherePermissionsPanel = document.getElementById("nexphere-permissions-panel");
+  const nexphereVisibilityPublicBtn = document.getElementById("nexphere-visibility-public");
+  const nexphereVisibilityPrivateBtn = document.getElementById("nexphere-visibility-private");
+  const nexphereProfileCloseBtn = document.getElementById("nexphere-profile-close");
 
   // 🔥 Автоскролл к последнему сообщению
   function scrollMessagesToBottom() {
@@ -556,6 +600,7 @@
   let currentPeerDisplayName = null;
   let currentPeerAvatarUrl = null;
   let currentNexusView = null;
+  let currentNexphereData = null;
   let amBlockedInCurrentChat = false; // заблокирован ли я в текущем чате
 
   // Проверка: мобильный ли экран
@@ -1475,20 +1520,20 @@
               openNexphere(nexphere);
             }, 200);
           } else {
-            // Присоединяемся к нексфере
+            // Присоединяемся к публичной нексфере
             try {
-              const res = await fetch(`/api/nexpheres/${nexphere.id}/members`, {
+              const res = await fetch(`/api/nexpheres/${nexphere.id}/join`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId: currentUser.id })
+                headers: { "Content-Type": "application/json" }
               });
               const data = await res.json();
-              
+
               if (data.ok) {
                 actionBtn.textContent = "Открыть";
                 actionBtn.style.background = "#10b981";
                 nexphere.is_member = true;
                 showAlert("Вы присоединились к нексфере!", "Успех", "ОК", "primary");
+                loadChats();
               } else {
                 showAlert(data.error || "Не удалось присоединиться", "Ошибка", "ОК", "danger");
               }
@@ -1852,6 +1897,7 @@
 
     // Устанавливаем текущую нексферу
     window.currentNexphereId = nexphere.id;
+    currentNexphereData = nexphere;
 
     if (nexphereLeaveBtn) {
       const isOwner = currentUser && nexphere.owner_id === currentUser.id;
@@ -2651,6 +2697,10 @@
         openNexusProfileModal(currentNexusView.id);
         return;
       }
+      if (window.currentNexphereId && !currentChatId) {
+        openNexphereProfileModal(window.currentNexphereId);
+        return;
+      }
       if (!currentChatId || !currentPeerUserId || !currentPeerUsername) return;
       openProfileModal();
     });
@@ -2848,6 +2898,184 @@
     if (backdrop) {
       backdrop.addEventListener('click', closeNexusProfileModal);
     }
+  }
+
+  // ===== ПРОФИЛЬ НЕКСФЕРЫ =====
+  function updateNexphereProfileUI(nexphere) {
+    if (!nexphereProfileModalEl) return;
+    if (nexphereProfileNameEl) nexphereProfileNameEl.textContent = nexphere.name || "—";
+    if (nexphereProfileVisibilityEl) {
+      nexphereProfileVisibilityEl.textContent = nexphere.visibility === "private" ? "частная" : "публичная";
+    }
+
+    const isOwner = currentUser && nexphere.owner_id === currentUser.id;
+    if (nexphereProfileActionsEl) {
+      nexphereProfileActionsEl.style.display = isOwner ? "flex" : "none";
+    }
+    if (nexpherePermissionsPanel) {
+      nexpherePermissionsPanel.style.display = "none";
+    }
+  }
+
+  function openNexphereProfileModal(nexphereId) {
+    if (!nexphereProfileModalEl) return;
+    fetch(`/api/nexpheres/${nexphereId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data.ok) {
+          showAlert(data.error || "Не удалось загрузить профиль нексферы", "Ошибка", "ОК", "danger");
+          return;
+        }
+        currentNexphereData = data.nexphere;
+        updateNexphereProfileUI(currentNexphereData);
+        nexphereProfileModalEl.style.display = "flex";
+      })
+      .catch(() => {
+        showAlert("Ошибка сервера", "Ошибка", "ОК", "danger");
+      });
+  }
+
+  function closeNexphereProfileModal() {
+    if (!nexphereProfileModalEl) return;
+    nexphereProfileModalEl.style.display = "none";
+  }
+
+  if (nexphereProfileCloseBtn) {
+    nexphereProfileCloseBtn.addEventListener("click", closeNexphereProfileModal);
+  }
+
+  if (nexphereProfileModalEl) {
+    const backdrop = nexphereProfileModalEl.querySelector('.confirm-modal-backdrop');
+    if (backdrop) {
+      backdrop.addEventListener('click', closeNexphereProfileModal);
+    }
+  }
+
+  if (nexpherePermissionsBtn) {
+    nexpherePermissionsBtn.addEventListener("click", () => {
+      if (!currentNexphereData || !currentUser) return;
+      if (currentNexphereData.owner_id !== currentUser.id) {
+        showAlert("Только владелец может менять разрешения", "Доступ ограничен", "ОК", "primary");
+        return;
+      }
+      if (nexpherePermissionsPanel) {
+        nexpherePermissionsPanel.style.display = nexpherePermissionsPanel.style.display === "none" ? "block" : "none";
+      }
+    });
+  }
+
+  function setNexphereVisibility(visibility) {
+    if (!currentNexphereData) return;
+    fetch(`/api/nexpheres/${currentNexphereData.id}/visibility`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ visibility })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (!data.ok) {
+          showAlert(data.error || "Не удалось изменить видимость", "Ошибка", "ОК", "danger");
+          return;
+        }
+        currentNexphereData.visibility = data.visibility;
+        updateNexphereProfileUI(currentNexphereData);
+        loadChats();
+      })
+      .catch(() => {
+        showAlert("Ошибка сервера", "Ошибка", "ОК", "danger");
+      });
+  }
+
+  if (nexphereVisibilityPublicBtn) {
+    nexphereVisibilityPublicBtn.addEventListener("click", () => setNexphereVisibility("public"));
+  }
+
+  if (nexphereVisibilityPrivateBtn) {
+    nexphereVisibilityPrivateBtn.addEventListener("click", () => setNexphereVisibility("private"));
+  }
+
+  if (nexphereAddUserBtn) {
+    nexphereAddUserBtn.addEventListener("click", () => {
+      if (!currentNexphereData || !currentUser) return;
+      if (currentNexphereData.owner_id !== currentUser.id) {
+        showAlert("Только владелец может добавлять участников", "Доступ ограничен", "ОК", "primary");
+        return;
+      }
+      showPrompt("Введите ник пользователя", "Добавить участника", "", async (username) => {
+        const query = (username || "").trim();
+        if (!query) return;
+
+        try {
+          const res = await fetch(`/api/users?search=${encodeURIComponent(query)}`);
+          const data = await res.json();
+          const users = data.users || [];
+          const exact = users.find(u => u.username.toLowerCase() === query.toLowerCase());
+          const target = exact || users[0];
+
+          if (!target) {
+            showAlert("Пользователь не найден", "Ошибка", "ОК", "danger");
+            return;
+          }
+
+          const addRes = await fetch(`/api/nexpheres/${currentNexphereData.id}/members`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: target.id })
+          });
+          const addData = await addRes.json();
+
+          if (addData.ok) {
+            showAlert("Пользователь добавлен", "Готово", "ОК", "primary");
+            loadChats();
+          } else {
+            showAlert(addData.error || "Не удалось добавить пользователя", "Ошибка", "ОК", "danger");
+          }
+        } catch (err) {
+          showAlert("Ошибка сервера", "Ошибка", "ОК", "danger");
+        }
+      });
+    });
+  }
+
+  if (nexphereRemoveUserBtn) {
+    nexphereRemoveUserBtn.addEventListener("click", () => {
+      if (!currentNexphereData || !currentUser) return;
+      if (currentNexphereData.owner_id !== currentUser.id) {
+        showAlert("Только владелец может удалять участников", "Доступ ограничен", "ОК", "primary");
+        return;
+      }
+      showPrompt("Введите ник пользователя", "Удалить участника", "", async (username) => {
+        const query = (username || "").trim();
+        if (!query) return;
+
+        try {
+          const res = await fetch(`/api/users?search=${encodeURIComponent(query)}`);
+          const data = await res.json();
+          const users = data.users || [];
+          const exact = users.find(u => u.username.toLowerCase() === query.toLowerCase());
+          const target = exact || users[0];
+
+          if (!target) {
+            showAlert("Пользователь не найден", "Ошибка", "ОК", "danger");
+            return;
+          }
+
+          const removeRes = await fetch(`/api/nexpheres/${currentNexphereData.id}/members/${target.id}`, {
+            method: "DELETE"
+          });
+          const removeData = await removeRes.json();
+
+          if (removeData.ok) {
+            showAlert("Пользователь удалён", "Готово", "ОК", "primary");
+            loadChats();
+          } else {
+            showAlert(removeData.error || "Не удалось удалить пользователя", "Ошибка", "ОК", "danger");
+          }
+        } catch (err) {
+          showAlert("Ошибка сервера", "Ошибка", "ОК", "danger");
+        }
+      });
+    });
   }
 
   // Закрыть профиль

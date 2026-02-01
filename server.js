@@ -491,8 +491,15 @@ async function initDb() {
       id SERIAL PRIMARY KEY,
       name TEXT NOT NULL,
       owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      visibility TEXT NOT NULL DEFAULT 'public',
       created_at TIMESTAMPTZ DEFAULT NOW()
     );
+  `);
+
+  // Добавляем видимость для уже существующих нексфер
+  await pool.query(`
+    ALTER TABLE nexpheres
+    ADD COLUMN IF NOT EXISTS visibility TEXT NOT NULL DEFAULT 'public'
   `);
 
   // Участники нексферы
@@ -1537,7 +1544,7 @@ app.post("/api/nexpheres", requireAuth, async (req, res) => {
 
     // Создаём нексферу
     const result = await pool.query(
-      "INSERT INTO nexpheres (name, owner_id) VALUES ($1, $2) RETURNING id, name, owner_id, created_at",
+      "INSERT INTO nexpheres (name, owner_id, visibility) VALUES ($1, $2, 'public') RETURNING id, name, owner_id, visibility, created_at",
       [name, userId]
     );
 
@@ -1555,6 +1562,7 @@ app.post("/api/nexpheres", requireAuth, async (req, res) => {
         id: nexphere.id,
         name: nexphere.name,
         owner_id: nexphere.owner_id,
+        visibility: nexphere.visibility,
         created_at: nexphere.created_at,
         members_count: 1,
       }
@@ -1576,6 +1584,8 @@ app.get("/api/nexpheres", requireAuth, async (req, res) => {
         n.id,
         n.name,
         n.owner_id,
+        n.visibility,
+        n.visibility,
         n.created_at,
         u.username AS owner_username,
         u.display_name AS owner_display_name,
@@ -1597,7 +1607,7 @@ app.get("/api/nexpheres", requireAuth, async (req, res) => {
     }
 
     query += `
-      GROUP BY n.id, n.name, n.owner_id, n.created_at, u.username, u.display_name
+      GROUP BY n.id, n.name, n.owner_id, n.visibility, n.created_at, u.username, u.display_name
       ORDER BY n.created_at DESC
     `;
 
@@ -1624,6 +1634,7 @@ app.get("/api/nexpheres/search/all", requireAuth, async (req, res) => {
         n.id,
         n.name,
         n.owner_id,
+        n.visibility,
         n.created_at,
         u.username AS owner_username,
         u.display_name AS owner_display_name,
@@ -1639,12 +1650,14 @@ app.get("/api/nexpheres/search/all", requireAuth, async (req, res) => {
 
     // Добавляем фильтр поиска по названию нексферы
     if (search) {
-      query += ` WHERE n.name ILIKE $2`;
+      query += ` WHERE n.name ILIKE $2 AND n.visibility = 'public'`;
       params.push(search);
+    } else {
+      query += ` WHERE n.visibility = 'public'`;
     }
 
     query += `
-      GROUP BY n.id, n.name, n.owner_id, n.created_at, u.username, u.display_name
+      GROUP BY n.id, n.name, n.owner_id, n.visibility, n.created_at, u.username, u.display_name
       ORDER BY n.created_at DESC
       LIMIT 10
     `;
@@ -1691,7 +1704,7 @@ app.get("/api/nexpheres/:nexphereId", requireAuth, async (req, res) => {
       JOIN users u ON u.id = n.owner_id
       LEFT JOIN nexphere_members nm ON nm.nexphere_id = n.id
       WHERE n.id = $1
-      GROUP BY n.id, n.name, n.owner_id, n.created_at, u.username, u.display_name
+      GROUP BY n.id, n.name, n.owner_id, n.visibility, n.created_at, u.username, u.display_name
       `,
       [nexphereId]
     );
@@ -1789,6 +1802,121 @@ app.post("/api/nexpheres/:nexphereId/members", requireAuth, async (req, res) => 
     res.json({ ok: true });
   } catch (err) {
     console.error("Ошибка при добавлении участника:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// Присоединиться к публичной нексфере
+app.post("/api/nexpheres/:nexphereId/join", requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const nexphereId = parseInt(req.params.nexphereId, 10);
+
+    if (!nexphereId || Number.isNaN(nexphereId)) {
+      return res.status(400).json({ ok: false, error: "Некорректный nexphereId" });
+    }
+
+    const nexphereCheck = await pool.query(
+      "SELECT visibility FROM nexpheres WHERE id = $1 LIMIT 1",
+      [nexphereId]
+    );
+
+    if (nexphereCheck.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: "Нексфера не найдена" });
+    }
+
+    if (nexphereCheck.rows[0].visibility !== "public") {
+      return res.status(403).json({ ok: false, error: "Нексфера является частной" });
+    }
+
+    await pool.query(
+      "INSERT INTO nexphere_members (nexphere_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+      [nexphereId, userId]
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Ошибка при присоединении к нексфере:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// Удалить участника из нексферы (только владелец)
+app.delete("/api/nexpheres/:nexphereId/members/:userId", requireAuth, async (req, res) => {
+  try {
+    const ownerId = req.session.user.id;
+    const nexphereId = parseInt(req.params.nexphereId, 10);
+    const targetUserId = parseInt(req.params.userId, 10);
+
+    if (!nexphereId || !targetUserId || Number.isNaN(nexphereId) || Number.isNaN(targetUserId)) {
+      return res.status(400).json({ ok: false, error: "Некорректные параметры" });
+    }
+
+    const ownerCheck = await pool.query(
+      "SELECT owner_id FROM nexpheres WHERE id = $1 LIMIT 1",
+      [nexphereId]
+    );
+
+    if (ownerCheck.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: "Нексфера не найдена" });
+    }
+
+    if (ownerCheck.rows[0].owner_id !== ownerId) {
+      return res.status(403).json({ ok: false, error: "Только владелец может удалять участников" });
+    }
+
+    if (ownerId === targetUserId) {
+      return res.status(400).json({ ok: false, error: "Нельзя удалить владельца" });
+    }
+
+    await pool.query(
+      "DELETE FROM nexphere_members WHERE nexphere_id = $1 AND user_id = $2",
+      [nexphereId, targetUserId]
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("Ошибка при удалении участника:", err);
+    res.status(500).json({ ok: false, error: "Ошибка сервера" });
+  }
+});
+
+// Обновить видимость нексферы (только владелец)
+app.patch("/api/nexpheres/:nexphereId/visibility", requireAuth, async (req, res) => {
+  try {
+    const ownerId = req.session.user.id;
+    const nexphereId = parseInt(req.params.nexphereId, 10);
+    const visibility = (req.body.visibility || "").trim().toLowerCase();
+
+    if (!nexphereId || Number.isNaN(nexphereId)) {
+      return res.status(400).json({ ok: false, error: "Некорректный nexphereId" });
+    }
+
+    if (visibility !== "public" && visibility !== "private") {
+      return res.status(400).json({ ok: false, error: "Некорректная видимость" });
+    }
+
+    const ownerCheck = await pool.query(
+      "SELECT owner_id FROM nexpheres WHERE id = $1 LIMIT 1",
+      [nexphereId]
+    );
+
+    if (ownerCheck.rowCount === 0) {
+      return res.status(404).json({ ok: false, error: "Нексфера не найдена" });
+    }
+
+    if (ownerCheck.rows[0].owner_id !== ownerId) {
+      return res.status(403).json({ ok: false, error: "Только владелец может менять видимость" });
+    }
+
+    await pool.query(
+      "UPDATE nexpheres SET visibility = $1 WHERE id = $2",
+      [visibility, nexphereId]
+    );
+
+    res.json({ ok: true, visibility });
+  } catch (err) {
+    console.error("Ошибка при изменении видимости нексферы:", err);
     res.status(500).json({ ok: false, error: "Ошибка сервера" });
   }
 });
