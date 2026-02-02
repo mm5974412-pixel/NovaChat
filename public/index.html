@@ -206,6 +206,465 @@
         line-height: 1.6;
       }
     }
+
+    /* === НОВЫЕ СТИЛИ ДЛЯ РАЗНООБРАЗИЯ === */
+
+    /* Раздел с особенностями */
+    .features-section {
+      margin: 80px 0;
+      padding: 60px 20px;
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+      border-radius: 24px;
+      animation: sectionFadeIn 1s ease 0.6s both;
+    }
+
+    .section-title {
+      font-size: 32px;
+      font-weight: 800;
+      text-align: center;
+      margin-bottom: 48px;
+      background: linear-gradient(135deg, #22c55e 0%, #3b82f6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .feature-card {
+      background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      border-radius: 16px;
+      padding: 28px;
+      text-align: center;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      animation: cardSlideUp 0.6s ease both;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.1), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .feature-card:hover::before {
+      left: 100%;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      border-color: rgba(34, 197, 94, 0.5);
+      box-shadow: 0 12px 32px rgba(34, 197, 94, 0.2);
+    }
+
+    .feature-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      animation: iconFloat 3s ease-in-out infinite;
+    }
+
+    .feature-card[data-feature="voice"] .feature-icon {
+      animation-delay: 0.2s;
+    }
+
+    .feature-card[data-feature="files"] .feature-icon {
+      animation-delay: 0.4s;
+    }
+
+    .feature-card[data-feature="stickers"] .feature-icon {
+      animation-delay: 0.6s;
+    }
+
+    .feature-card[data-feature="privacy"] .feature-icon {
+      animation-delay: 0.8s;
+    }
+
+    .feature-card[data-feature="mobile"] .feature-icon {
+      animation-delay: 1s;
+    }
+
+    @keyframes iconFloat {
+      0%, 100% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(-12px);
+      }
+    }
+
+    @keyframes cardSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(24px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .feature-card h4 {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 12px 0;
+      color: #ffffff;
+    }
+
+    .feature-card p {
+      font-size: 14px;
+      color: #9ca3af;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    /* Раздел со статистикой */
+    .stats-section {
+      margin: 80px 0;
+      padding: 60px 20px;
+      background: linear-gradient(135deg, #111827 0%, #0f172a 100%);
+      border: 1px solid rgba(34, 197, 94, 0.1);
+      border-radius: 24px;
+      animation: sectionFadeIn 1s ease 0.8s both;
+    }
+
+    .stats-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 32px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .stat-card {
+      text-align: center;
+      padding: 32px;
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1));
+      border-radius: 12px;
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(34, 197, 94, 0.4);
+      box-shadow: 0 8px 24px rgba(34, 197, 94, 0.15);
+    }
+
+    .stat-number {
+      font-size: 42px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #22c55e 0%, #3b82f6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #9ca3af;
+      font-weight: 600;
+    }
+
+    @keyframes sectionFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Раздел "Как это работает" */
+    .demo-section {
+      margin: 80px 0;
+      padding: 60px 20px;
+      animation: sectionFadeIn 1s ease 1s both;
+    }
+
+    .demo-steps {
+      max-width: 900px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 48px;
+      animation: stepFadeIn 0.6s ease both;
+    }
+
+    .step-item[data-step="2"] {
+      animation-delay: 0.2s;
+    }
+
+    .step-item[data-step="3"] {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes stepFadeIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .step-number {
+      flex-shrink: 0;
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, #22c55e 0%, #22d3ee 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffffff;
+      box-shadow: 0 8px 24px rgba(34, 197, 94, 0.3);
+    }
+
+    .step-content {
+      flex: 1;
+      background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      border-radius: 12px;
+      padding: 24px;
+      transition: all 0.3s ease;
+    }
+
+    .step-item:hover .step-content {
+      border-color: rgba(34, 197, 94, 0.5);
+      transform: translateX(8px);
+      box-shadow: 0 8px 24px rgba(34, 197, 94, 0.15);
+    }
+
+    .step-content h4 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+      color: #ffffff;
+    }
+
+    .step-content p {
+      margin: 0;
+      font-size: 14px;
+      color: #9ca3af;
+    }
+
+    .step-connector {
+      position: absolute;
+      left: 28px;
+      width: 2px;
+      height: 48px;
+      background: linear-gradient(180deg, rgba(34, 197, 94, 0.3), transparent);
+      margin-top: 56px;
+    }
+
+    /* CTA секция */
+    .cta-section {
+      margin: 80px 0 40px;
+      padding: 60px 40px;
+      background: linear-gradient(135deg, #22c55e 0%, #3b82f6 100%);
+      border-radius: 24px;
+      text-align: center;
+      animation: sectionFadeIn 1s ease 1.2s both;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+      background-size: 50px 50px;
+      animation: bgMove 20s linear infinite;
+    }
+
+    @keyframes bgMove {
+      0% {
+        transform: translate(0, 0);
+      }
+      100% {
+        transform: translate(50px, 50px);
+      }
+    }
+
+    .cta-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .cta-section h3 {
+      font-size: 36px;
+      font-weight: 800;
+      margin: 0 0 12px;
+      color: #ffffff;
+    }
+
+    .cta-section p {
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.9);
+      margin: 0 0 28px;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-large {
+      padding: 14px 32px !important;
+      font-size: 16px !important;
+      font-weight: 700 !important;
+    }
+
+    /* Light mode */
+    .light .features-section {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%);
+    }
+
+    .light .feature-card {
+      background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+      border-color: rgba(34, 197, 94, 0.3);
+    }
+
+    .light .feature-card:hover {
+      border-color: rgba(34, 197, 94, 0.6);
+      box-shadow: 0 12px 32px rgba(34, 197, 94, 0.15);
+    }
+
+    .light .feature-card h4 {
+      color: #1f2937;
+    }
+
+    .light .feature-card p {
+      color: #6b7280;
+    }
+
+    .light .stats-section {
+      background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+      border-color: rgba(34, 197, 94, 0.15);
+    }
+
+    .light .stat-card {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(59, 130, 246, 0.08));
+      border-color: rgba(34, 197, 94, 0.3);
+    }
+
+    .light .step-content {
+      background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+      border-color: rgba(34, 197, 94, 0.3);
+    }
+
+    .light .step-content h4 {
+      color: #1f2937;
+    }
+
+    .light .step-content p {
+      color: #6b7280;
+    }
+
+    /* Оптимизация для мобильных */
+    @media (max-width: 768px) {
+      .features-section,
+      .stats-section,
+      .demo-section,
+      .cta-section {
+        margin: 60px 0;
+        padding: 40px 16px;
+      }
+
+      .section-title {
+        font-size: 24px;
+        margin-bottom: 32px;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+
+      .stats-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+
+      .step-item {
+        gap: 16px;
+        margin-bottom: 32px;
+      }
+
+      .step-connector {
+        left: 28px;
+        height: 32px;
+        margin-top: 56px;
+      }
+
+      .cta-section {
+        padding: 40px 20px;
+      }
+
+      .cta-section h3 {
+        font-size: 24px;
+      }
+
+      .cta-buttons {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .btn-large {
+        width: 100%;
+      }
+    }
+
+    /* Оптимизация анимаций для мобильных */
+    @media (prefers-reduced-motion: reduce) {
+      .nova-logo,
+      .nova-icon,
+      .header h1,
+      .landing-text h2,
+      .landing-text p,
+      .landing-actions,
+      .preview-window,
+      .feature-card,
+      .feature-icon,
+      .stat-card,
+      .step-item,
+      .step-content,
+      .cta-section,
+      .cta-section::before {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
   </style>
   <script>
     // Применяем сохранённую тему до отрисовки страницы
@@ -271,6 +730,107 @@
         </div>
       </div>
     </div>
+
+    <!-- Раздел с особенностями -->
+    <section class="features-section">
+      <h3 class="section-title">Почему выбирают Nexora?</h3>
+      <div class="features-grid">
+        <div class="feature-card" data-feature="speed">
+          <div class="feature-icon">⚡</div>
+          <h4>Молниеносно быстро</h4>
+          <p>Сообщения доставляются в реальном времени без задержек и лагов</p>
+        </div>
+        <div class="feature-card" data-feature="voice">
+          <div class="feature-icon">🎤</div>
+          <h4>Голосовые сообщения</h4>
+          <p>Отправляй аудио заметки с одним нажатием кнопки</p>
+        </div>
+        <div class="feature-card" data-feature="files">
+          <div class="feature-icon">📁</div>
+          <h4>Обмен файлами</h4>
+          <p>Делись документами, фотографиями и видео легко и просто</p>
+        </div>
+        <div class="feature-card" data-feature="stickers">
+          <div class="feature-icon">🎨</div>
+          <h4>Стикеры и эмодзи</h4>
+          <p>Огромная библиотека стикеров для выражения эмоций</p>
+        </div>
+        <div class="feature-card" data-feature="privacy">
+          <div class="feature-icon">🔒</div>
+          <h4>Приватность</h4>
+          <p>Твои сообщения защищены с использованием современной шифрации</p>
+        </div>
+        <div class="feature-card" data-feature="mobile">
+          <div class="feature-icon">📱</div>
+          <h4>Работает везде</h4>
+          <p>Web, мобильный браузер, PWA приложение — выбирай сам</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Раздел со статистикой -->
+    <section class="stats-section">
+      <div class="stats-container">
+        <div class="stat-card">
+          <div class="stat-number" data-target="1000">0</div>
+          <div class="stat-label">Активных пользователей</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" data-target="50000">0</div>
+          <div class="stat-label">Сообщений в сутки</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" data-target="99.9">0</div>
+          <div class="stat-label">% Uptime</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" data-target="24">0</div>
+          <div class="stat-label">Часов поддержки</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Интерактивная демонстрация -->
+    <section class="demo-section">
+      <h3 class="section-title">Как это работает</h3>
+      <div class="demo-steps">
+        <div class="step-item" data-step="1">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h4>Войди или создай аккаунт</h4>
+            <p>Быстрая регистрация за несколько секунд</p>
+          </div>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-item" data-step="2">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h4>Найди друзей</h4>
+            <p>Поиск и добавление контактов в один клик</p>
+          </div>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-item" data-step="3">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h4>Начни общаться</h4>
+            <p>Отправляй сообщения, голос, файлы и стикеры</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA секция -->
+    <section class="cta-section">
+      <div class="cta-content">
+        <h3>Готов к общению?</h3>
+        <p>Присоединяйся к тысячам пользователей Nexora</p>
+        <div class="cta-buttons">
+          <a href="/chat" class="btn-primary btn-large">🚀 Начать прямо сейчас</a>
+          <a href="/register.html" class="btn-secondary btn-large">📝 Создать аккаунт</a>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="footer">
@@ -359,6 +919,70 @@
       installBtn.style.display = "none";
     }
   });
+
+  // Счетчик статистики с анимацией
+  function animateCounters() {
+    const stats = document.querySelectorAll('.stat-number');
+    
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !entry.target.dataset.animated) {
+          entry.target.dataset.animated = 'true';
+          const target = parseFloat(entry.target.dataset.target);
+          const start = 0;
+          const duration = 2000;
+          const startTime = Date.now();
+
+          const animate = () => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Easing function
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            const current = start + (target - start) * easeOut;
+            
+            if (target > 100) {
+              entry.target.textContent = Math.floor(current).toLocaleString('ru-RU');
+            } else {
+              entry.target.textContent = current.toFixed(1);
+            }
+
+            if (progress < 1) {
+              requestAnimationFrame(animate);
+            }
+          };
+
+          animate();
+        }
+      });
+    }, { threshold: 0.5 });
+
+    stats.forEach(stat => observer.observe(stat));
+  }
+
+  // Интерактивность карточек
+  function setupFeatureCards() {
+    const cards = document.querySelectorAll('.feature-card');
+    cards.forEach(card => {
+      card.addEventListener('mouseenter', function() {
+        this.style.zIndex = '10';
+      });
+      card.addEventListener('mouseleave', function() {
+        this.style.zIndex = '1';
+      });
+    });
+  }
+
+  // Запускаем при загрузке
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      animateCounters();
+      setupFeatureCards();
+    });
+  } else {
+    animateCounters();
+    setupFeatureCards();
+  }
 </script>
 </body>
 </html>
