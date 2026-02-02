@@ -10,12 +10,7 @@
     "dev": "node server.js",
     "prod": "NODE_ENV=production node server.js",
     "electron:dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && electron .\"",
-    "electron:build": "npm install --prefix electron && electron-builder --publish never",
-    "mobile:install": "cd mobile && npm install && cd ..",
-    "mobile:android": "cd mobile && npm run android && cd ..",
-    "mobile:ios": "cd mobile && npm run ios && cd ..",
-    "mobile:build:android": "cd mobile && npm run build:android && cd ..",
-    "mobile:build:ios": "cd mobile && npm run build:ios && cd .."
+    "electron:build": "npm install --prefix electron && electron-builder --publish never"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
