@@ -300,6 +300,10 @@
       <span style="font-size: 18px; margin-right: 8px;">🔗</span>
       <span>Создать нексферу</span>
     </button>
+    <button id="create-bot-option" class="create-menu-item">
+      <span style="font-size: 18px; margin-right: 8px;">🤖</span>
+      <span>Создать Nexis бота</span>
+    </button>
   </div>
     </div>
   </div>
@@ -374,6 +378,115 @@
         <button id="prompt-cancel" class="confirm-btn confirm-btn-cancel">Отмена</button>
         <button id="prompt-ok" class="confirm-btn confirm-btn-ok confirm-btn-primary">ОК</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно Nexis ботов (Telegram-подобное) -->
+  <div id="bots-modal" class="confirm-modal" style="display: none;">
+    <div class="confirm-modal-backdrop"></div>
+    <div class="confirm-modal-content" style="max-width: 600px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div class="confirm-modal-title">🤖 Nexis Боты</div>
+        <button id="bots-modal-close" style="background: none; border: none; font-size: 24px; cursor: pointer; color: inherit;">✕</button>
+      </div>
+
+      <!-- Вкладки -->
+      <div id="bots-tabs" style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+        <button id="bots-tab-explore" class="bots-tab-btn active" style="flex: 1; padding: 8px; border: none; background: none; cursor: pointer; color: inherit; font-weight: 500;">Исследовать</button>
+        <button id="bots-tab-subscribed" class="bots-tab-btn" style="flex: 1; padding: 8px; border: none; background: none; cursor: pointer; color: inherit; opacity: 0.7;">Мои боты</button>
+      </div>
+
+      <!-- Содержимое вкладок -->
+      <div id="bots-content" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column;">
+        <!-- Список ботов (будет заполнен JS) -->
+        <div id="bots-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+        <div id="bots-empty" style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+          Загружаем боты...
+        </div>
+      </div>
+
+      <!-- Кнопка создания бота -->
+      <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+        <button id="bots-create-btn" style="width: 100%; padding: 10px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+          + Создать нового бота
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно создания бота -->
+  <div id="bot-create-modal" class="confirm-modal" style="display: none;">
+    <div class="confirm-modal-backdrop"></div>
+    <div class="confirm-modal-content" style="max-width: 500px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div class="confirm-modal-title">Создать Nexis бота</div>
+        <button id="bot-create-close" style="background: none; border: none; font-size: 24px; cursor: pointer; color: inherit;">✕</button>
+      </div>
+
+      <form id="bot-create-form" style="display: flex; flex-direction: column; gap: 15px;">
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-weight: 500;">Имя бота <span style="color: red;">*</span></label>
+          <input 
+            type="text" 
+            id="bot-name" 
+            class="prompt-input"
+            placeholder="Мой прекрасный бот"
+            required
+            style="width: 100%;"
+          >
+        </div>
+
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-weight: 500;">Описание</label>
+          <textarea 
+            id="bot-description" 
+            class="prompt-input"
+            placeholder="Описание того, что делает ваш бот..."
+            style="width: 100%; height: 80px; resize: none;"
+          ></textarea>
+        </div>
+
+        <div>
+          <label style="display: block; margin-bottom: 5px; font-weight: 500;">URL аватара (опционально)</label>
+          <input 
+            type="url" 
+            id="bot-avatar-url" 
+            class="prompt-input"
+            placeholder="https://example.com/avatar.jpg"
+            style="width: 100%;"
+          >
+        </div>
+
+        <div class="confirm-modal-buttons">
+          <button type="button" id="bot-create-cancel" class="confirm-btn confirm-btn-cancel">Отмена</button>
+          <button type="submit" class="confirm-btn confirm-btn-ok confirm-btn-primary">Создать</button>
+        </div>
+      </form>
+
+      <div id="bot-create-error" style="color: var(--error-color); margin-top: 10px; display: none;"></div>
+    </div>
+  </div>
+
+  <!-- Модальное окно просмотра бота -->
+  <div id="bot-view-modal" class="confirm-modal" style="display: none;">
+    <div class="confirm-modal-backdrop"></div>
+    <div class="confirm-modal-content" style="max-width: 500px;">
+      <button id="bot-view-close" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: inherit;">✕</button>
+      
+      <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+        <img id="bot-view-avatar" src="" alt="Бот" style="width: 80px; height: 80px; border-radius: 10px; background: var(--hover-color); object-fit: cover;">
+        <div style="flex: 1;">
+          <div id="bot-view-name" class="confirm-modal-title" style="margin: 0;"></div>
+          <div id="bot-view-description" style="font-size: 14px; color: var(--text-secondary); margin-top: 5px;"></div>
+          <div id="bot-view-subscribers" style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;"></div>
+        </div>
+      </div>
+
+      <div id="bot-action-buttons" style="display: flex; gap: 10px; flex-direction: column;">
+        <button id="bot-subscribe-btn" class="confirm-btn confirm-btn-ok confirm-btn-primary" style="width: 100%;">Подписаться</button>
+      </div>
+
+      <div id="bot-view-error" style="color: var(--error-color); margin-top: 10px; display: none;"></div>
     </div>
   </div>
 
@@ -4039,6 +4152,293 @@
   document.addEventListener("click", (e) => {
     if (!createBtn.contains(e.target) && !createMenu.contains(e.target)) {
       closeCreateMenu();
+    }
+  });
+
+  // ===== NEXIS БОТЫ =====
+  const botsModal = document.getElementById("bots-modal");
+  const botsModalClose = document.getElementById("bots-modal-close");
+  const botCreateModal = document.getElementById("bot-create-modal");
+  const botCreateClose = document.getElementById("bot-create-close");
+  const botViewModal = document.getElementById("bot-view-modal");
+  const botViewClose = document.getElementById("bot-view-close");
+  const createBotOption = document.getElementById("create-bot-option");
+  const botsTabExplore = document.getElementById("bots-tab-explore");
+  const botsTabSubscribed = document.getElementById("bots-tab-subscribed");
+  const botsList = document.getElementById("bots-list");
+  const botsEmpty = document.getElementById("bots-empty");
+  const botsCreateBtn = document.getElementById("bots-create-btn");
+  const botCreateForm = document.getElementById("bot-create-form");
+  const botCreateCancel = document.getElementById("bot-create-cancel");
+  const botName = document.getElementById("bot-name");
+  const botDescription = document.getElementById("bot-description");
+  const botAvatarUrl = document.getElementById("bot-avatar-url");
+  const botCreateError = document.getElementById("bot-create-error");
+  const botViewAvatar = document.getElementById("bot-view-avatar");
+  const botViewName = document.getElementById("bot-view-name");
+  const botViewDescription = document.getElementById("bot-view-description");
+  const botViewSubscribers = document.getElementById("bot-view-subscribers");
+  const botSubscribeBtn = document.getElementById("bot-subscribe-btn");
+  const botViewError = document.getElementById("bot-view-error");
+
+  let currentBotId = null;
+  let currentBotsTab = "explore";
+
+  // Применяем тему при открытии модального окна
+  function applyThemeToModal(modal) {
+    const theme = document.documentElement.classList.contains('light') ? 'light' : 'dark';
+    if (theme === 'light') {
+      modal.style.backgroundColor = 'white';
+      modal.style.color = '#1f2937';
+    } else {
+      modal.style.backgroundColor = '';
+      modal.style.color = '';
+    }
+  }
+
+  // Открыть окно ботов
+  function openBotsModal() {
+    botsModal.style.display = "flex";
+    applyThemeToModal(botsModal.querySelector('.confirm-modal-content'));
+    loadBots("explore");
+  }
+
+  // Закрыть окно ботов
+  function closeBotsModal() {
+    botsModal.style.display = "none";
+  }
+
+  // Закрыть окно создания бота
+  function closeBotCreateModal() {
+    botCreateModal.style.display = "none";
+  }
+
+  // Загрузить ботов
+  async function loadBots(tab = "explore") {
+    currentBotsTab = tab;
+    botsList.innerHTML = "";
+    botsEmpty.textContent = "Загружаем боты...";
+    botsEmpty.style.display = "flex";
+
+    try {
+      let url = "/api/bots";
+      if (tab === "subscribed") {
+        url = "/api/user/bot-subscriptions";
+      }
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        botsEmpty.textContent = response.status === 401 ? "Войдите в аккаунт" : "Ошибка загрузки";
+        return;
+      }
+
+      const data = await response.json();
+      const bots = data.bots || [];
+
+      if (bots.length === 0) {
+        botsEmpty.textContent = tab === "explore" ? "Ботов пока нет" : "Вы не подписаны на ботов";
+        botsEmpty.style.display = "flex";
+        botsList.innerHTML = "";
+        return;
+      }
+
+      botsEmpty.style.display = "none";
+      botsList.innerHTML = bots.map(bot => `
+        <div style="display: flex; gap: 12px; padding: 12px; border-radius: 8px; background: var(--hover-color); cursor: pointer; transition: background 0.2s;" class="bot-item" data-bot-id="${bot.id}">
+          <img 
+            src="${bot.avatar_url || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2255%22 font-size=%2240%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3E🤖%3C/text%3E%3C/svg%3E'}" 
+            alt="${bot.name}" 
+            style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover;"
+          >
+          <div style="flex: 1;">
+            <div style="font-weight: 600;">${escapeHtml(bot.name)}</div>
+            <div style="font-size: 13px; color: var(--text-secondary); margin-top: 3px;">${escapeHtml(bot.description || "")}</div>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 5px;">👥 ${bot.subscriber_count || 0} подписчиков</div>
+          </div>
+        </div>
+      `).join("");
+
+      // Добавить обработчики клика
+      document.querySelectorAll(".bot-item").forEach(item => {
+        item.addEventListener("click", () => {
+          const botId = item.dataset.botId;
+          showBotView(botId, bots.find(b => b.id == botId));
+        });
+      });
+
+    } catch (err) {
+      console.error(err);
+      botsEmpty.textContent = "Ошибка загрузки ботов";
+      botsEmpty.style.display = "flex";
+    }
+  }
+
+  // Показать информацию о боте
+  function showBotView(botId, botData) {
+    currentBotId = botId;
+    botViewName.textContent = botData.name;
+    botViewDescription.textContent = botData.description || "Нет описания";
+    botViewSubscribers.textContent = `👥 ${botData.subscriber_count || 0} подписчиков`;
+    botViewAvatar.src = botData.avatar_url || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2255%22 font-size=%2240%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3E🤖%3C/text%3E%3C/svg%3E';
+    
+    botViewError.style.display = "none";
+    botViewModal.style.display = "flex";
+    applyThemeToModal(botViewModal.querySelector('.confirm-modal-content'));
+  }
+
+  // Создать бота
+  async function createBot(name, description, avatarUrl) {
+    const response = await fetch("/api/bots", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, description, avatar_url: avatarUrl })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Ошибка создания");
+    }
+    return data;
+  }
+
+  // Подписаться на бота
+  async function subscribeToBot(botId) {
+    const response = await fetch(`/api/bots/${botId}/subscribe`, { method: "POST" });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Ошибка подписки");
+    }
+    return data;
+  }
+
+  // Отписаться от бота
+  async function unsubscribeFromBot(botId) {
+    const response = await fetch(`/api/bots/${botId}/unsubscribe`, { method: "POST" });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Ошибка отписки");
+    }
+    return data;
+  }
+
+  // Обработчики событий
+  if (createBotOption) {
+    createBotOption.addEventListener("click", () => {
+      closeCreateMenu();
+      botCreateModal.style.display = "flex";
+      applyThemeToModal(botCreateModal.querySelector('.confirm-modal-content'));
+      botName.focus();
+      botCreateForm.reset();
+      botCreateError.style.display = "none";
+    });
+  }
+
+  if (botsModalClose) {
+    botsModalClose.addEventListener("click", closeBotsModal);
+  }
+
+  if (botCreateClose) {
+    botCreateClose.addEventListener("click", closeBotCreateModal);
+  }
+
+  if (botViewClose) {
+    botViewClose.addEventListener("click", () => {
+      botViewModal.style.display = "none";
+    });
+  }
+
+  if (botCreateCancel) {
+    botCreateCancel.addEventListener("click", closeBotCreateModal);
+  }
+
+  if (botsCreateBtn) {
+    botsCreateBtn.addEventListener("click", () => {
+      closeBotsModal();
+      botCreateModal.style.display = "flex";
+      applyThemeToModal(botCreateModal.querySelector('.confirm-modal-content'));
+      botName.focus();
+      botCreateForm.reset();
+      botCreateError.style.display = "none";
+    });
+  }
+
+  if (botsTabExplore) {
+    botsTabExplore.addEventListener("click", () => {
+      botsTabExplore.classList.add("active");
+      botsTabSubscribed.classList.remove("active");
+      botsTabExplore.style.opacity = "1";
+      botsTabSubscribed.style.opacity = "0.7";
+      loadBots("explore");
+    });
+  }
+
+  if (botsTabSubscribed) {
+    botsTabSubscribed.addEventListener("click", () => {
+      botsTabSubscribed.classList.add("active");
+      botsTabExplore.classList.remove("active");
+      botsTabSubscribed.style.opacity = "1";
+      botsTabExplore.style.opacity = "0.7";
+      loadBots("subscribed");
+    });
+  }
+
+  if (botCreateForm) {
+    botCreateForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = botName.value.trim();
+      const description = botDescription.value.trim();
+      const avatarUrl = botAvatarUrl.value.trim();
+
+      if (!name) {
+        botCreateError.textContent = "Имя бота обязательно";
+        botCreateError.style.display = "block";
+        return;
+      }
+
+      const submitBtn = botCreateForm.querySelector("button[type='submit']");
+      submitBtn.disabled = true;
+
+      try {
+        const result = await createBot(name, description, avatarUrl);
+        closeBotCreateModal();
+        showAlert(`Бот "${name}" создан! 🤖`, "Успех", "ОК", "success");
+        loadBots("explore");
+      } catch (err) {
+        console.error(err);
+        botCreateError.textContent = err.message;
+        botCreateError.style.display = "block";
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  }
+
+  if (botSubscribeBtn) {
+    botSubscribeBtn.addEventListener("click", async () => {
+      botSubscribeBtn.disabled = true;
+      try {
+        await subscribeToBot(currentBotId);
+        botViewModal.style.display = "none";
+        loadBots(currentBotsTab);
+        showAlert("Подписка добавлена!", "Успех", "ОК", "success");
+      } catch (err) {
+        console.error(err);
+        botViewError.textContent = err.message;
+        botViewError.style.display = "block";
+      } finally {
+        botSubscribeBtn.disabled = false;
+      }
+    });
+  }
+
+  // Закрыть модальные окна при клике на фон
+  [botsModal, botCreateModal, botViewModal].forEach(modal => {
+    if (modal) {
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+          modal.style.display = "none";
+        }
+      });
     }
   });
 });

@@ -538,8 +538,59 @@ async function initDb() {
     );
   `);
 
+  // ============ ТАБЛИЦЫ ДЛЯ БОТОВ NEXIS ============
+  // Таблица ботов
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS nexis_bots (
+      id SERIAL PRIMARY KEY,
+      name VARCHAR(100) NOT NULL UNIQUE,
+      description TEXT,
+      avatar_url TEXT,
+      creator_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      is_active BOOLEAN DEFAULT true,
+      commands TEXT[], -- JSON array с командами: [{"cmd": "/start", "description": "Начать", "handler": "start"}]
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
+  // Таблица подписок на ботов
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS nexis_bot_subscribers (
+      id SERIAL PRIMARY KEY,
+      bot_id INTEGER NOT NULL REFERENCES nexis_bots(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      subscribed_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(bot_id, user_id)
+    );
+  `);
+
+  // Таблица сообщений от ботов в чатах
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS nexis_bot_messages (
+      id SERIAL PRIMARY KEY,
+      bot_id INTEGER NOT NULL REFERENCES nexis_bots(id) ON DELETE CASCADE,
+      chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+      message_text TEXT NOT NULL,
+      buttons TEXT, -- JSON array с кнопками: [{"text": "Кнопка", "action": "callback_id"}]
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
+  // Таблица действий ботов (логирование)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS nexis_bot_actions (
+      id SERIAL PRIMARY KEY,
+      bot_id INTEGER NOT NULL REFERENCES nexis_bots(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      action_type VARCHAR(50), -- 'message', 'command', 'button_click'
+      action_data TEXT, -- JSON с данными действия
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+  `);
+
   console.log(
-    "База данных инициализирована (users, chats, chat_members, messages, blocked_users, settings, nexus, nexpheres готовы)"
+    "База данных инициализирована (users, chats, chat_members, messages, blocked_users, settings, nexus, nexpheres, nexis_bots готовы)"
   );
 }
 
@@ -3683,6 +3734,322 @@ app.get("/admin/content", checkAdmin, async (req, res) => {
     res.json({ ok: true, content: data });
   } catch (err) {
     console.error("Content fetch error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+// ===== NEXIS BOTS ENDPOINTS =====
+
+// Получить список всех доступных ботов
+app.get("/api/bots", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        id, name, description, avatar_url, is_active, created_at,
+        (SELECT COUNT(*) FROM nexis_bot_subscribers WHERE bot_id = nexis_bots.id) as subscriber_count
+      FROM nexis_bots 
+      WHERE is_active = true
+      ORDER BY created_at DESC
+    `);
+    res.json({ ok: true, bots: result.rows });
+  } catch (err) {
+    console.error("Bots fetch error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+// Получить информацию о конкретном боте
+app.get("/api/bots/:botId", async (req, res) => {
+  const { botId } = req.params;
+  try {
+    const result = await pool.query(`
+      SELECT 
+        id, name, description, avatar_url, commands, is_active, creator_id, created_at
+      FROM nexis_bots 
+      WHERE id = $1
+    `, [botId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ ok: false, error: "Bot not found" });
+    }
+    
+    res.json({ ok: true, bot: result.rows[0] });
+  } catch (err) {
+    console.error("Bot fetch error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+// Создать нового бота (только для авторизованных пользователей)
+app.post("/api/bots", async (req, res) => {
+  if (!req.session.user || !req.session.user.id) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+
+  const { name, description, avatar_url, commands } = req.body;
+
+  if (!name || name.trim().length < 3) {
+    return res.status(400).json({ ok: false, error: "Bot name must be at least 3 characters" });
+  }
+
+  try {
+    const result = await pool.query(`
+      INSERT INTO nexis_bots (name, description, avatar_url, creator_id, commands)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING id, name, description, avatar_url, is_active, created_at
+    `, [
+      name,
+      description || null,
+      avatar_url || null,
+      req.session.user.id,
+      commands ? JSON.stringify(commands) : null
+    ]);
+
+    io.emit("bot-created", result.rows[0]);
+    res.json({ ok: true, bot: result.rows[0] });
+  } catch (err) {
+    if (err.code === '23505') { // Уникальное нарушение
+      return res.status(400).json({ ok: false, error: "Bot name already exists" });
+    }
+    console.error("Bot creation error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+// Подписаться на бота
+app.post("/api/bots/:botId/subscribe", async (req, res) => {
+  if (!req.session.user || !req.session.user.id) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+
+  const { botId } = req.params;
+
+  try {
+    const result = await pool.query(`
+      INSERT INTO nexis_bot_subscribers (bot_id, user_id)
+      VALUES ($1, $2)
+      ON CONFLICT (bot_id, user_id) DO NOTHING
+      RETURNING id, subscribed_at
+    `, [botId, req.session.user.id]);
+
+    // Логирование действия
+    await pool.query(`
+      INSERT INTO nexis_bot_actions (bot_id, user_id, action_type, action_data)
+      VALUES ($1, $2, 'subscribe', $3)
+    `, [botId, req.session.user.id, JSON.stringify({ action: 'user_subscribed' })]);
+
+    res.json({ ok: true, message: "Subscribed to bot" });
+  } catch (err) {
+    console.error("Bot subscription error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+// Отписаться от бота
+app.post("/api/bots/:botId/unsubscribe", async (req, res) => {
+  if (!req.session.user || !req.session.user.id) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+
+  const { botId } = req.params;
+
+  try {
+    await pool.query(`
+      DELETE FROM nexis_bot_subscribers
+      WHERE bot_id = $1 AND user_id = $2
+    `, [botId, req.session.user.id]);
+
+    // Логирование действия
+    await pool.query(`
+      INSERT INTO nexis_bot_actions (bot_id, user_id, action_type, action_data)
+      VALUES ($1, $2, 'unsubscribe', $3)
+    `, [botId, req.session.user.id, JSON.stringify({ action: 'user_unsubscribed' })]);
+
+    res.json({ ok: true, message: "Unsubscribed from bot" });
+  } catch (err) {
+    console.error("Bot unsubscription error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+// Получить ботов, на которых подписан пользователь
+app.get("/api/user/bot-subscriptions", async (req, res) => {
+  if (!req.session.user || !req.session.user.id) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+
+  try {
+    const result = await pool.query(`
+      SELECT 
+        nb.id, nb.name, nb.description, nb.avatar_url, nb.is_active,
+        (SELECT COUNT(*) FROM nexis_bot_subscribers WHERE bot_id = nb.id) as subscriber_count
+      FROM nexis_bots nb
+      INNER JOIN nexis_bot_subscribers nbs ON nb.id = nbs.bot_id
+      WHERE nbs.user_id = $1
+      ORDER BY nbs.subscribed_at DESC
+    `, [req.session.user.id]);
+
+    res.json({ ok: true, bots: result.rows });
+  } catch (err) {
+    console.error("Bot subscriptions fetch error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+// Отправить команду боту
+app.post("/api/bots/:botId/command", async (req, res) => {
+  if (!req.session.user || !req.session.user.id) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+
+  const { botId } = req.params;
+  const { command, chatId, params } = req.body;
+
+  if (!command) {
+    return res.status(400).json({ ok: false, error: "Command is required" });
+  }
+
+  try {
+    const bot = await pool.query("SELECT * FROM nexis_bots WHERE id = $1", [botId]);
+    if (bot.rows.length === 0) {
+      return res.status(404).json({ ok: false, error: "Bot not found" });
+    }
+
+    // Логирование команды
+    await pool.query(`
+      INSERT INTO nexis_bot_actions (bot_id, user_id, action_type, action_data)
+      VALUES ($1, $2, 'command', $3)
+    `, [botId, req.session.user.id, JSON.stringify({ command, params })]);
+
+    // Обработка команд по умолчанию
+    let response = null;
+
+    if (command === '/start') {
+      response = {
+        text: `👋 Привет! Я ${bot.rows[0].name}.\n\n${bot.rows[0].description || 'Я здесь, чтобы помочь тебе.'}`,
+        buttons: [
+          { text: '📋 Помощь', action: 'help' },
+          { text: '⚙️ Настройки', action: 'settings' }
+        ]
+      };
+    } else if (command === '/help') {
+      const commands = bot.rows[0].commands || [];
+      let helpText = `📚 Команды ${bot.rows[0].name}:\n\n`;
+      if (Array.isArray(commands) && commands.length > 0) {
+        commands.forEach((cmd, idx) => {
+          helpText += `${idx + 1}. ${cmd.cmd || ''} - ${cmd.description || 'нет описания'}\n`;
+        });
+      } else {
+        helpText += '/start - Начать\n/help - Помощь\n/settings - Настройки';
+      }
+      response = { text: helpText };
+    } else if (command === '/settings') {
+      response = {
+        text: '⚙️ Настройки',
+        buttons: [
+          { text: '🔔 Уведомления', action: 'notifications' },
+          { text: '🎨 Тема', action: 'theme' }
+        ]
+      };
+    } else {
+      response = {
+        text: `Команда "${command}" не распознана. Попробуйте /help`
+      };
+    }
+
+    // Если есть chatId, сохраняем сообщение бота
+    if (chatId) {
+      await pool.query(`
+        INSERT INTO nexis_bot_messages (bot_id, chat_id, message_text, buttons)
+        VALUES ($1, $2, $3, $4)
+      `, [
+        botId,
+        chatId,
+        response.text,
+        response.buttons ? JSON.stringify(response.buttons) : null
+      ]);
+
+      // Отправляем сообщение в чат через Socket.IO
+      io.to(`chat:${chatId}`).emit("message-from-bot", {
+        botId,
+        botName: bot.rows[0].name,
+        botAvatar: bot.rows[0].avatar_url,
+        text: response.text,
+        buttons: response.buttons,
+        timestamp: new Date()
+      });
+    }
+
+    res.json({ ok: true, response });
+  } catch (err) {
+    console.error("Bot command error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+// Обработать клик по кнопке бота
+app.post("/api/bots/:botId/button-click", async (req, res) => {
+  if (!req.session.user || !req.session.user.id) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+
+  const { botId } = req.params;
+  const { action, chatId } = req.body;
+
+  try {
+    const bot = await pool.query("SELECT * FROM nexis_bots WHERE id = $1", [botId]);
+    if (bot.rows.length === 0) {
+      return res.status(404).json({ ok: false, error: "Bot not found" });
+    }
+
+    // Логирование клика
+    await pool.query(`
+      INSERT INTO nexis_bot_actions (bot_id, user_id, action_type, action_data)
+      VALUES ($1, $2, 'button_click', $3)
+    `, [botId, req.session.user.id, JSON.stringify({ action })]);
+
+    let response = null;
+
+    if (action === 'help') {
+      response = {
+        text: `📚 Помощь по ${bot.rows[0].name}`
+      };
+    } else if (action === 'settings') {
+      response = {
+        text: `⚙️ Настройки ${bot.rows[0].name}`
+      };
+    } else if (action === 'notifications') {
+      response = {
+        text: `🔔 Уведомления включены`
+      };
+    } else if (action === 'theme') {
+      response = {
+        text: `🎨 Тема изменена`
+      };
+    } else {
+      response = {
+        text: `Действие "${action}" не распознано`
+      };
+    }
+
+    if (chatId) {
+      await pool.query(`
+        INSERT INTO nexis_bot_messages (bot_id, chat_id, message_text)
+        VALUES ($1, $2, $3)
+      `, [botId, chatId, response.text]);
+
+      io.to(`chat:${chatId}`).emit("message-from-bot", {
+        botId,
+        botName: bot.rows[0].name,
+        botAvatar: bot.rows[0].avatar_url,
+        text: response.text,
+        timestamp: new Date()
+      });
+    }
+
+    res.json({ ok: true, response });
+  } catch (err) {
+    console.error("Bot button click error:", err);
     res.status(500).json({ ok: false, error: "Server error" });
   }
 });

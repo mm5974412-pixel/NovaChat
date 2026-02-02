@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexis Bot Tester</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .tester-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-success {
+            background: #34C759;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #2ba84a;
+        }
+
+        .btn-danger {
+            background: #FF3B30;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e62f26;
+        }
+
+        .output {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            color: #333;
+            max-height: 300px;
+            overflow-y: auto;
+            word-break: break-all;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .bot-list {
+            display: grid;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .bot-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid #667eea;
+        }
+
+        .bot-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .bot-item.selected {
+            background: #e7f0ff;
+            border-left-color: #667eea;
+        }
+
+        .bot-item-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .bot-item-desc {
+            font-size: 12px;
+            color: #666;
+            margin-top: 3px;
+        }
+
+        @media (max-width: 768px) {
+            .tester-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+
+        .loader {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Заголовок -->
+        <div class="header">
+            <h1>🤖 Nexis Bot Tester</h1>
+            <p>Тестируйте функциональность ботов в реальном времени</p>
+        </div>
+
+        <!-- Главная сетка -->
+        <div class="tester-grid">
+            <!-- Левая колонка: Выбор и управление ботом -->
+            <div class="card">
+                <h2>📋 Боты</h2>
+                
+                <div class="form-group">
+                    <label>Выберите бота:</label>
+                    <select id="bot-select">
+                        <option value="">-- Загрузка ботов --</option>
+                    </select>
+                </div>
+
+                <div id="bot-list" class="bot-list"></div>
+
+                <div class="form-group">
+                    <label>Информация о боте:</label>
+                    <div id="bot-info" style="padding: 12px; background: #f8f9fa; border-radius: 6px; font-size: 13px;">
+                        <p style="color: #999;">Выберите бота для просмотра информации</p>
+                    </div>
+                </div>
+
+                <button class="btn-primary" onclick="loadBots()">🔄 Перезагрузить ботов</button>
+            </div>
+
+            <!-- Правая колонка: Отправка команд -->
+            <div class="card">
+                <h2>💬 Тестирование команд</h2>
+                
+                <div class="form-group">
+                    <label>ID чата (опционально):</label>
+                    <input type="number" id="chat-id" placeholder="Введите ID чата" value="">
+                </div>
+
+                <div class="form-group">
+                    <label>Выберите команду:</label>
+                    <select id="command-select">
+                        <option value="/start">Начать (/start)</option>
+                        <option value="/help">Помощь (/help)</option>
+                        <option value="/settings">Настройки (/settings)</option>
+                        <option value="">-- Или введите свою --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Или введите свою команду:</label>
+                    <input type="text" id="custom-command" placeholder="/my-command" value="">
+                </div>
+
+                <button class="btn-success" onclick="sendCommand()">📤 Отправить команду</button>
+
+                <h3 style="margin-top: 25px; margin-bottom: 15px; font-size: 16px;">Кнопки действий:</h3>
+                <button class="btn-primary" onclick="sendCommand('/start')">▶️ /start</button>
+                <button class="btn-primary" onclick="sendCommand('/help')">❓ /help</button>
+                <button class="btn-primary" onclick="sendCommand('/settings')">⚙️ /settings</button>
+
+                <button class="btn-success" onclick="subscribeToBot()" style="margin-top: 10px;">✅ Подписаться</button>
+                <button class="btn-danger" onclick="unsubscribeFromBot()">❌ Отписаться</button>
+
+                <div id="output" class="output" style="display: none;"></div>
+            </div>
+        </div>
+
+        <!-- Дополнительные функции -->
+        <div class="card" style="margin-top: 30px;">
+            <h2>🧪 Дополнительные функции</h2>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                <button class="btn-primary" onclick="getAllBots()">📋 Получить всех ботов</button>
+                <button class="btn-primary" onclick="getUserSubscriptions()">👤 Мои подписки</button>
+                <button class="btn-primary" onclick="handleButtonClick('help')">🔘 Тест клика кнопки</button>
+                <button class="btn-secondary" onclick="clearOutput()">🗑️ Очистить лог</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedBotId = null;
+        let currentBotData = null;
+
+        // Логирование вывода
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            output.style.display = 'block';
+            const timestamp = new Date().toLocaleTimeString('ru-RU');
+            const line = document.createElement('div');
+            line.style.marginBottom = '8px';
+            line.style.padding = '8px';
+            line.style.borderRadius = '3px';
+            
+            if (type === 'success') {
+                line.style.background = '#d4edda';
+                line.style.color = '#155724';
+                line.innerHTML = `<strong>[✅ ${timestamp}]</strong> ${message}`;
+            } else if (type === 'error') {
+                line.style.background = '#f8d7da';
+                line.style.color = '#721c24';
+                line.innerHTML = `<strong>[❌ ${timestamp}]</strong> ${message}`;
+            } else {
+                line.style.background = '#d1ecf1';
+                line.style.color = '#0c5460';
+                line.innerHTML = `<strong>[ℹ️ ${timestamp}]</strong> ${message}`;
+            }
+            
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearOutput() {
+            const output = document.getElementById('output');
+            output.innerHTML = '';
+            output.style.display = 'none';
+        }
+
+        // Загрузить ботов
+        async function loadBots() {
+            log('Загрузка ботов...', 'info');
+            try {
+                const response = await fetch('/api/bots');
+                const data = await response.json();
+
+                if (data.ok) {
+                    const select = document.getElementById('bot-select');
+                    const list = document.getElementById('bot-list');
+                    
+                    select.innerHTML = '<option value="">-- Выберите бота --</option>';
+                    list.innerHTML = '';
+
+                    data.bots.forEach(bot => {
+                        // Добавить в select
+                        const option = document.createElement('option');
+                        option.value = bot.id;
+                        option.textContent = bot.name;
+                        select.appendChild(option);
+
+                        // Добавить в список
+                        const item = document.createElement('div');
+                        item.className = 'bot-item';
+                        item.onclick = () => selectBot(bot);
+                        item.innerHTML = `
+                            <div class="bot-item-name">🤖 ${bot.name}</div>
+                            <div class="bot-item-desc">${bot.description || 'Нет описания'}</div>
+                        `;
+                        list.appendChild(item);
+                    });
+
+                    log(`Загружено ботов: ${data.bots.length}`, 'success');
+                } else {
+                    log('Ошибка загрузки ботов', 'error');
+                }
+            } catch (err) {
+                log(`Ошибка: ${err.message}`, 'error');
+            }
+        }
+
+        function selectBot(bot) {
+            selectedBotId = bot.id;
+            currentBotData = bot;
+            
+            // Обновить визуальное выделение
+            document.querySelectorAll('.bot-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+
+            // Показать информацию
+            const info = document.getElementById('bot-info');
+            info.innerHTML = `
+                <div style="font-size: 13px;">
+                    <p><strong>ID:</strong> ${bot.id}</p>
+                    <p><strong>Имя:</strong> ${bot.name}</p>
+                    <p><strong>Описание:</strong> ${bot.description || 'Нет'}</p>
+                    <p><strong>Подписчиков:</strong> ${bot.subscriber_count || 0}</p>
+                    <p><strong>Активен:</strong> ${bot.is_active ? 'Да' : 'Нет'}</p>
+                </div>
+            `;
+
+            log(`Выбран бот: ${bot.name} (ID: ${bot.id})`, 'success');
+        }
+
+        // Отправить команду
+        async function sendCommand(cmd = null) {
+            if (!selectedBotId) {
+                log('Сначала выберите бота', 'error');
+                return;
+            }
+
+            let command = cmd || document.getElementById('custom-command').value || 
+                         document.getElementById('command-select').value;
+
+            if (!command) {
+                log('Введите команду', 'error');
+                return;
+            }
+
+            const chatId = document.getElementById('chat-id').value || null;
+
+            log(`Отправка команды: ${command}...`, 'info');
+
+            try {
+                const response = await fetch(`/api/bots/${selectedBotId}/command`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command, chatId })
+                });
+
+                const data = await response.json();
+
+                if (data.ok) {
+                    log(`Ответ бота: ${data.response.text}`, 'success');
+                    if (data.response.buttons) {
+                        log(`Кнопки: ${JSON.stringify(data.response.buttons)}`, 'info');
+                    }
+                } else {
+                    log(`Ошибка: ${data.error}`, 'error');
+                }
+            } catch (err) {
+                log(`Ошибка: ${err.message}`, 'error');
+            }
+        }
+
+        // Получить всех ботов
+        async function getAllBots() {
+            log('Получение информации о всех ботах...', 'info');
+            try {
+                const response = await fetch('/api/bots');
+                const data = await response.json();
+                if (data.ok) {
+                    log(`Всего ботов: ${data.bots.length}`, 'success');
+                    data.bots.forEach(bot => {
+                        log(`  - ${bot.name} (подписчиков: ${bot.subscriber_count})`, 'info');
+                    });
+                }
+            } catch (err) {
+                log(`Ошибка: ${err.message}`, 'error');
+            }
+        }
+
+        // Подписаться на бота
+        async function subscribeToBot() {
+            if (!selectedBotId) {
+                log('Сначала выберите бота', 'error');
+                return;
+            }
+
+            log(`Подписка на бота ${selectedBotId}...`, 'info');
+            try {
+                const response = await fetch(`/api/bots/${selectedBotId}/subscribe`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+                if (data.ok) {
+                    log('✅ Подписка успешна', 'success');
+                } else {
+                    log(`Ошибка: ${data.error}`, 'error');
+                }
+            } catch (err) {
+                log(`Ошибка: ${err.message}`, 'error');
+            }
+        }
+
+        // Отписаться от бота
+        async function unsubscribeFromBot() {
+            if (!selectedBotId) {
+                log('Сначала выберите бота', 'error');
+                return;
+            }
+
+            log(`Отписка от бота ${selectedBotId}...`, 'info');
+            try {
+                const response = await fetch(`/api/bots/${selectedBotId}/unsubscribe`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+                if (data.ok) {
+                    log('❌ Отписка успешна', 'success');
+                } else {
+                    log(`Ошибка: ${data.error}`, 'error');
+                }
+            } catch (err) {
+                log(`Ошибка: ${err.message}`, 'error');
+            }
+        }
+
+        // Получить подписки пользователя
+        async function getUserSubscriptions() {
+            log('Получение ваших подписок...', 'info');
+            try {
+                const response = await fetch('/api/user/bot-subscriptions');
+                const data = await response.json();
+
+                if (data.ok) {
+                    log(`Ваши подписки: ${data.bots.length}`, 'success');
+                    data.bots.forEach(bot => {
+                        log(`  - ${bot.name}`, 'info');
+                    });
+                } else if (response.status === 401) {
+                    log('Войдите для просмотра подписок', 'error');
+                }
+            } catch (err) {
+                log(`Ошибка: ${err.message}`, 'error');
+            }
+        }
+
+        // Обработать клик кнопки
+        async function handleButtonClick(action) {
+            if (!selectedBotId) {
+                log('Сначала выберите бота', 'error');
+                return;
+            }
+
+            const chatId = document.getElementById('chat-id').value || null;
+            log(`Обработка клика кнопки: ${action}...`, 'info');
+
+            try {
+                const response = await fetch(`/api/bots/${selectedBotId}/button-click`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action, chatId })
+                });
+
+                const data = await response.json();
+                if (data.ok) {
+                    log(`Ответ: ${data.response.text}`, 'success');
+                } else {
+                    log(`Ошибка: ${data.error}`, 'error');
+                }
+            } catch (err) {
+                log(`Ошибка: ${err.message}`, 'error');
+            }
+        }
+
+        // Инициализация
+        loadBots();
+    </script>
+</body>
+</html>

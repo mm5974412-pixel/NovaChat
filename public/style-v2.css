@@ -4580,3 +4580,80 @@ html.light .create-menu-item:hover {
   color: #8b5cf6;
 }
 
+/* Стили для Nexis ботов */
+.bots-tab-btn {
+  transition: all 0.3s ease;
+  border-bottom: 2px solid transparent;
+  color: #9ca3af;
+}
+
+.bots-tab-btn.active {
+  color: #8b5cf6;
+  border-bottom-color: #8b5cf6;
+}
+
+#bots-list {
+  animation: fadeIn 0.3s ease;
+}
+
+#bots-empty {
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+  color: #9ca3af;
+}
+
+.bot-item {
+  animation: slideIn 0.2s ease;
+}
+
+.bot-item:hover {
+  background: rgba(139, 92, 246, 0.15) !important;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+html.light #bots-content {
+  color: #1f2937;
+}
+
+html.light .bot-item {
+  background: rgba(139, 92, 246, 0.05) !important;
+}
+
+html.light .bot-item:hover {
+  background: rgba(139, 92, 246, 0.1) !important;
+}
+
+html.light .bots-tab-btn {
+  color: #6b7280;
+}
+
+html.light .bots-tab-btn.active {
+  color: #8b5cf6;
+  border-bottom-color: #8b5cf6;
+}
+
+html.light #bots-empty {
+  color: #9ca3af;
+}
+
+
