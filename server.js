@@ -3758,6 +3758,28 @@ app.get("/api/bots", async (req, res) => {
   }
 });
 
+// Получить ботов, созданных текущим пользователем
+app.get("/api/bots/mine", async (req, res) => {
+  if (!req.session.user || !req.session.user.id) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+
+  try {
+    const result = await pool.query(`
+      SELECT
+        id, name, description, avatar_url, is_active, created_at, creator_id,
+        (SELECT COUNT(*) FROM nexis_bot_subscribers WHERE bot_id = nexis_bots.id) as subscriber_count
+      FROM nexis_bots
+      WHERE creator_id = $1
+      ORDER BY created_at DESC
+    `, [req.session.user.id]);
+    res.json({ ok: true, bots: result.rows });
+  } catch (err) {
+    console.error("Bots mine fetch error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
 // Получить информацию о конкретном боте
 app.get("/api/bots/:botId", async (req, res) => {
   const { botId } = req.params;

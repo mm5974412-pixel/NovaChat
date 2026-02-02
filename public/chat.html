@@ -1305,9 +1305,12 @@
         .catch(() => ({ ok: true, nexpheres: [] })),
       fetch("/api/user/bot-subscriptions", { credentials: 'include' })
         .then(r => r.json())
+        .catch(() => ({ ok: true, bots: [] })),
+      fetch("/api/bots/mine", { credentials: 'include' })
+        .then(r => r.json())
         .catch(() => ({ ok: true, bots: [] }))
     ])
-      .then(([chatsData, nexusData, nexphereData, botsData]) => {
+      .then(([chatsData, nexusData, nexphereData, botsData, myBotsData]) => {
         if (!chatList) return;
         chatList.innerHTML = "";
 
@@ -1315,7 +1318,13 @@
         const nexuses = nexusData.ok && nexusData.nexus ? nexusData.nexus : [];
         const nexpheres = nexphereData.ok && nexphereData.nexpheres ? nexphereData.nexpheres : [];
         const bots = botsData.ok && botsData.bots ? botsData.bots : [];
+        const myBots = myBotsData.ok && myBotsData.bots ? myBotsData.bots : [];
         const mergedBots = [...bots];
+        myBots.forEach((b) => {
+          if (!mergedBots.find((x) => x.id === b.id)) {
+            mergedBots.push(b);
+          }
+        });
         cachedBots.forEach((b) => {
           if (!mergedBots.find((x) => x.id === b.id)) {
             mergedBots.push(b);
@@ -1323,7 +1332,7 @@
         });
         cachedBots = mergedBots;
         
-        console.log("loadChats data:", { chats: chats.length, nexuses: nexuses.length, nexpheres: nexpheres.length, bots: bots.length, botsData });
+        console.log("loadChats data:", { chats: chats.length, nexuses: nexuses.length, nexpheres: nexpheres.length, bots: bots.length, myBots: myBots.length, botsData, myBotsData });
         
         const allItems = [...(chats || []), ...(nexuses || []), ...(nexpheres || []), ...(mergedBots || [])];
 
