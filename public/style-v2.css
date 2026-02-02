@@ -215,8 +215,13 @@
   display: none;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
+  z-index: 3000;
   animation: confirmFadeIn 0.3s ease;
+}
+
+/* Профиль Nexis должен быть ниже диалогов подтверждения */
+#nexis-profile-modal {
+  z-index: 2500 !important;
 }
 
 .confirm-modal.show {
