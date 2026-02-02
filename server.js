@@ -3805,6 +3805,15 @@ app.post("/api/bots", async (req, res) => {
       commands ? JSON.stringify(commands) : null
     ]);
 
+    const botId = result.rows[0].id;
+
+    // Автоматически подписываем создателя на бота
+    await pool.query(`
+      INSERT INTO nexis_bot_subscribers (bot_id, user_id)
+      VALUES ($1, $2)
+      ON CONFLICT (bot_id, user_id) DO NOTHING
+    `, [botId, req.session.user.id]);
+
     io.emit("bot-created", result.rows[0]);
     res.json({ ok: true, bot: result.rows[0] });
   } catch (err) {

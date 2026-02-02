@@ -1283,23 +1283,27 @@
         .catch(() => ({ ok: true, nexus: [] })),
       fetch("/api/nexpheres")
         .then(r => r.json())
-        .catch(() => ({ ok: true, nexpheres: [] }))
+        .catch(() => ({ ok: true, nexpheres: [] })),
+      fetch("/api/user/bot-subscriptions", { credentials: 'include' })
+        .then(r => r.json())
+        .catch(() => ({ ok: true, bots: [] }))
     ])
-      .then(([chatsData, nexusData, nexphereData]) => {
+      .then(([chatsData, nexusData, nexphereData, botsData]) => {
         if (!chatList) return;
         chatList.innerHTML = "";
 
         const chats = chatsData.ok ? chatsData.chats : [];
         const nexuses = nexusData.ok && nexusData.nexus ? nexusData.nexus : [];
         const nexpheres = nexphereData.ok && nexphereData.nexpheres ? nexphereData.nexpheres : [];
-        const allItems = [...(chats || []), ...(nexuses || []), ...(nexpheres || [])];
+        const bots = botsData.ok && botsData.bots ? botsData.bots : [];
+        const allItems = [...(chats || []), ...(nexuses || []), ...(nexpheres || []), ...(bots || [])];
 
         if (allItems.length === 0) {
           const li = document.createElement("li");
           li.style.fontSize = "12px";
           li.style.color = "#6b7280";
           li.style.padding = "4px 2px";
-          li.textContent = "У вас пока нет чатов, нексусов или нексфер.";
+          li.textContent = "У вас пока нет чатов, нексусов, нексфер или ботов.";
           chatList.appendChild(li);
           if (!currentNexusView && !window.currentNexphereId) {
             if (chatTitleEl) chatTitleEl.textContent = "Nexora";
@@ -1456,10 +1460,84 @@
 
           chatList.appendChild(li);
         });
+
+        // Добавляем ботов
+        bots.forEach((bot) => {
+          const li = document.createElement("li");
+          li.classList.add("chat-item");
+          li.dataset.botId = bot.id;
+          li.dataset.type = "bot";
+
+          const avatar = document.createElement("div");
+          avatar.classList.add("chat-avatar");
+          if (bot.avatar_url) {
+            avatar.style.backgroundImage = `url('${bot.avatar_url}')`;
+            avatar.style.backgroundSize = 'cover';
+            avatar.style.backgroundPosition = 'center';
+          } else {
+            avatar.textContent = "🤖";
+            avatar.style.fontSize = "20px";
+          }
+
+          const meta = document.createElement("div");
+          meta.classList.add("chat-meta");
+
+          const name = document.createElement("div");
+          name.classList.add("chat-name");
+          name.textContent = bot.name;
+
+          const last = document.createElement("div");
+          last.classList.add("chat-last");
+          last.textContent = `🤖 Бот · ${bot.subscriber_count || 0} подписчиков`;
+
+          meta.appendChild(name);
+          meta.appendChild(last);
+          li.appendChild(avatar);
+          li.appendChild(meta);
+
+          li.addEventListener("click", () => {
+            document.querySelectorAll(".chat-item").forEach((el) => el.classList.remove("chat-item-active"));
+            li.classList.add("chat-item-active");
+            showBotInfo(bot);
+          });
+
+          chatList.appendChild(li);
+        });
       })
       .catch((err) => {
         console.error(err);
       });
+  }
+  
+  // Показать информацию о боте в main area
+  function showBotInfo(bot) {
+    currentChatId = null;
+    currentNexusView = null;
+    if (window.currentNexphereId) {
+      socket.emit("nexphere:leave", { nexphereId: window.currentNexphereId });
+      window.currentNexphereId = null;
+    }
+
+    if (chatTitleEl) chatTitleEl.textContent = `🤖 ${bot.name}`;
+    if (chatSubtitleEl) chatSubtitleEl.textContent = bot.description || "Бот Nexis";
+
+    messagesDiv.innerHTML = `
+      <div style="padding: 40px 20px; text-align: center; color: #9ca3af;">
+        <div style="font-size: 60px; margin-bottom: 20px;">🤖</div>
+        <h2 style="color: #e5e7eb; margin-bottom: 10px;">${escapeHtml(bot.name)}</h2>
+        <p style="margin-bottom: 20px;">${escapeHtml(bot.description || "")}</p>
+        <div style="font-size: 14px; color: #6b7280; margin: 20px 0;">
+          👥 ${bot.subscriber_count || 0} подписчиков
+        </div>
+        <div style="background: rgba(139, 92, 246, 0.1); padding: 20px; border-radius: 10px; margin-top: 20px; max-width: 500px; margin-left: auto; margin-right: auto;">
+          <p style="color: #a78bfa;">💡 Это ваш бот Nexis. Пользователи, подписавшиеся на него, видят обновления в своей нексоленте.</p>
+        </div>
+      </div>
+    `;
+    
+    if (form) {
+      form.style.display = "none";
+    }
   }
   
   // 🔥 Когда сервер говорит, что чаты обновились — перезагружаем список и сообщения
@@ -4226,7 +4304,7 @@
         url = "/api/user/bot-subscriptions";
       }
 
-      const response = await fetch(url);
+      const response = await fetch(url, { credentials: 'include' });
       if (!response.ok) {
         botsEmpty.textContent = response.status === 401 ? "Войдите в аккаунт" : "Ошибка загрузки";
         return;
@@ -4290,6 +4368,7 @@
   async function createBot(name, description, avatarUrl) {
     const response = await fetch("/api/bots", {
       method: "POST",
+      credentials: 'include',
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, description, avatar_url: avatarUrl })
     });
@@ -4303,7 +4382,7 @@
 
   // Подписаться на бота
   async function subscribeToBot(botId) {
-    const response = await fetch(`/api/bots/${botId}/subscribe`, { method: "POST" });
+    const response = await fetch(`/api/bots/${botId}/subscribe`, { method: "POST", credentials: 'include' });
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.error || "Ошибка подписки");
@@ -4313,7 +4392,7 @@
 
   // Отписаться от бота
   async function unsubscribeFromBot(botId) {
-    const response = await fetch(`/api/bots/${botId}/unsubscribe`, { method: "POST" });
+    const response = await fetch(`/api/bots/${botId}/unsubscribe`, { method: "POST", credentials: 'include' });
     const data = await response.json();
     if (!response.ok) {
       throw new Error(data.error || "Ошибка отписки");
@@ -4403,6 +4482,7 @@
         closeBotCreateModal();
         showAlert(`Бот "${name}" создан! 🤖`, "Успех", "ОК", "success");
         loadBots("explore");
+        loadChats(); // Обновляем нексолету с новым ботом
       } catch (err) {
         console.error(err);
         botCreateError.textContent = err.message;
