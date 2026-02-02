@@ -729,14 +729,14 @@ html.light .footer {
 /* ===== ФОРМА ВВОДА ===== */
 
 .chat-main-input {
-  position: fixed;
+  position: sticky;
   bottom: 0;
   left: 0;
   right: 0;
   display: flex;
   gap: 4px;
   padding: clamp(6px, 2vw, 8px);
-  padding-bottom: clamp(6px, 2vw, 8px + var(--safe-area-inset-bottom));
+  padding-bottom: clamp(6px, 2vw, 8px) + var(--safe-area-inset-bottom);
   background: linear-gradient(180deg, var(--dark-bg) 0%, rgba(15, 23, 42, 0.98) 100%);
   border-top: 1px solid var(--border-color);
   align-items: center;
