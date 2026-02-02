@@ -3894,14 +3894,17 @@ app.get("/api/user/bot-subscriptions", async (req, res) => {
 
   try {
     const result = await pool.query(`
-      SELECT DISTINCT
-        nb.id, nb.name, nb.description, nb.avatar_url, nb.is_active,
-        (SELECT COUNT(*) FROM nexis_bot_subscribers WHERE bot_id = nb.id) as subscriber_count,
-        COALESCE(nbs.subscribed_at, nb.created_at) AS sort_ts
-      FROM nexis_bots nb
-      LEFT JOIN nexis_bot_subscribers nbs
-        ON nb.id = nbs.bot_id AND nbs.user_id = $1
-      WHERE nbs.user_id = $1 OR nb.creator_id = $1
+      SELECT * FROM (
+        SELECT DISTINCT ON (nb.id)
+          nb.id, nb.name, nb.description, nb.avatar_url, nb.is_active, nb.creator_id,
+          (SELECT COUNT(*) FROM nexis_bot_subscribers WHERE bot_id = nb.id) as subscriber_count,
+          COALESCE(nbs.subscribed_at, nb.created_at) AS sort_ts
+        FROM nexis_bots nb
+        LEFT JOIN nexis_bot_subscribers nbs
+          ON nb.id = nbs.bot_id AND nbs.user_id = $1
+        WHERE nbs.user_id = $1 OR nb.creator_id = $1
+        ORDER BY nb.id, sort_ts DESC
+      ) t
       ORDER BY sort_ts DESC
     `, [req.session.user.id]);
 

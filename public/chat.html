@@ -717,6 +717,7 @@
   let currentNexusView = null;
   let currentNexphereData = null;
   let amBlockedInCurrentChat = false; // заблокирован ли я в текущем чате
+  let cachedBots = [];
 
   // Проверка: мобильный ли экран
   function isMobile() {
@@ -1296,10 +1297,17 @@
         const nexuses = nexusData.ok && nexusData.nexus ? nexusData.nexus : [];
         const nexpheres = nexphereData.ok && nexphereData.nexpheres ? nexphereData.nexpheres : [];
         const bots = botsData.ok && botsData.bots ? botsData.bots : [];
+        const mergedBots = [...bots];
+        cachedBots.forEach((b) => {
+          if (!mergedBots.find((x) => x.id === b.id)) {
+            mergedBots.push(b);
+          }
+        });
+        cachedBots = mergedBots;
         
         console.log("loadChats data:", { chats: chats.length, nexuses: nexuses.length, nexpheres: nexpheres.length, bots: bots.length, botsData });
         
-        const allItems = [...(chats || []), ...(nexuses || []), ...(nexpheres || []), ...(bots || [])];
+        const allItems = [...(chats || []), ...(nexuses || []), ...(nexpheres || []), ...(mergedBots || [])];
 
         if (allItems.length === 0) {
           const li = document.createElement("li");
@@ -1465,7 +1473,7 @@
         });
 
         // Добавляем ботов
-        bots.forEach((bot) => {
+        mergedBots.forEach((bot) => {
           const li = document.createElement("li");
           li.classList.add("chat-item");
           li.dataset.botId = bot.id;
@@ -1518,6 +1526,10 @@
 
     const existing = chatList.querySelector(`li[data-bot-id="${bot.id}"]`);
     if (existing) return;
+
+    if (!cachedBots.find((b) => b.id === bot.id)) {
+      cachedBots = [bot, ...cachedBots];
+    }
 
     // Удаляем плейсхолдер, если он есть
     const placeholder = Array.from(chatList.querySelectorAll("li")).find((li) =>
