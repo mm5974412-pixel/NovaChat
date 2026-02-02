@@ -689,9 +689,9 @@ html.light .footer {
   display: flex;
   flex-direction: column;
   gap: clamp(6px, 1.5vw, 8px);
-  padding: 0 0 clamp(10px, 2vw, 12px) 0;
+  padding: 0 0 clamp(120px, 25vh, 200px) 0;
   min-height: 0;
-  margin-bottom: clamp(50px, 15vh, 100px);
+  margin-bottom: 0;
 }
 
 .message {
@@ -729,19 +729,19 @@ html.light .footer {
 /* ===== ФОРМА ВВОДА ===== */
 
 .chat-main-input {
-  position: sticky;
-  bottom: 0;
+  position: fixed;
+  bottom: var(--safe-area-inset-bottom);
   left: 0;
   right: 0;
   display: flex;
   gap: 4px;
   padding: clamp(6px, 2vw, 8px);
-  padding-bottom: clamp(6px, 2vw, 8px) + var(--safe-area-inset-bottom);
   background: linear-gradient(180deg, var(--dark-bg) 0%, rgba(15, 23, 42, 0.98) 100%);
   border-top: 1px solid var(--border-color);
   align-items: center;
   z-index: 10;
   flex-wrap: nowrap;
+  width: 100%;
 }
 
 .chat-main-input input {
