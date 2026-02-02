@@ -207,23 +207,37 @@
       }
     }
 
-    /* === НОВЫЕ СТИЛИ ДЛЯ РАЗНООБРАЗИЯ === */
-
-    /* Раздел с особенностями */
+    /* ===== FEATURES SECTION ===== */
     .features-section {
-      margin: 80px 0;
-      padding: 60px 20px;
-      background: linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
-      border-radius: 24px;
-      animation: sectionFadeIn 1s ease 0.6s both;
+      margin-top: 80px;
+      margin-bottom: 80px;
+      text-align: center;
+      animation: sectionSlideUp 0.8s ease 0.6s both;
     }
 
-    .section-title {
-      font-size: 32px;
-      font-weight: 800;
-      text-align: center;
+    @keyframes sectionSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .features-title {
+      font-size: 36px;
+      font-weight: 700;
       margin-bottom: 48px;
-      background: linear-gradient(135deg, #22c55e 0%, #3b82f6 100%);
+      background: linear-gradient(135deg, #22c55e 0%, #22d3ee 50%, #3b82f6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .light .features-title {
+      background: linear-gradient(135deg, #059669 0%, #0891b2 50%, #1d4ed8 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -238,78 +252,28 @@
     }
 
     .feature-card {
-      background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-      border: 1px solid rgba(34, 197, 94, 0.2);
-      border-radius: 16px;
-      padding: 28px;
-      text-align: center;
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-      cursor: pointer;
       position: relative;
+      background: linear-gradient(135deg, rgba(20, 30, 50, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+      border: 1px solid rgba(37, 99, 235, 0.2);
+      border-radius: 16px;
+      padding: 32px 24px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
       overflow: hidden;
-      animation: cardSlideUp 0.6s ease both;
+      animation: cardFadeIn 0.6s ease backwards;
     }
 
-    .feature-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.1), transparent);
-      transition: left 0.5s ease;
-    }
+    .feature-card:nth-child(1) { animation-delay: 0.7s; }
+    .feature-card:nth-child(2) { animation-delay: 0.8s; }
+    .feature-card:nth-child(3) { animation-delay: 0.9s; }
+    .feature-card:nth-child(4) { animation-delay: 1s; }
+    .feature-card:nth-child(5) { animation-delay: 1.1s; }
+    .feature-card:nth-child(6) { animation-delay: 1.2s; }
 
-    .feature-card:hover::before {
-      left: 100%;
-    }
-
-    .feature-card:hover {
-      transform: translateY(-8px) scale(1.02);
-      border-color: rgba(34, 197, 94, 0.5);
-      box-shadow: 0 12px 32px rgba(34, 197, 94, 0.2);
-    }
-
-    .feature-icon {
-      font-size: 48px;
-      margin-bottom: 12px;
-      animation: iconFloat 3s ease-in-out infinite;
-    }
-
-    .feature-card[data-feature="voice"] .feature-icon {
-      animation-delay: 0.2s;
-    }
-
-    .feature-card[data-feature="files"] .feature-icon {
-      animation-delay: 0.4s;
-    }
-
-    .feature-card[data-feature="stickers"] .feature-icon {
-      animation-delay: 0.6s;
-    }
-
-    .feature-card[data-feature="privacy"] .feature-icon {
-      animation-delay: 0.8s;
-    }
-
-    .feature-card[data-feature="mobile"] .feature-icon {
-      animation-delay: 1s;
-    }
-
-    @keyframes iconFloat {
-      0%, 100% {
-        transform: translateY(0px);
-      }
-      50% {
-        transform: translateY(-12px);
-      }
-    }
-
-    @keyframes cardSlideUp {
+    @keyframes cardFadeIn {
       from {
         opacity: 0;
-        transform: translateY(24px);
+        transform: translateY(20px);
       }
       to {
         opacity: 1;
@@ -317,70 +281,186 @@
       }
     }
 
-    .feature-card h4 {
-      font-size: 18px;
-      font-weight: 700;
-      margin: 12px 0;
-      color: #ffffff;
+    .light .feature-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(249, 250, 251, 0.9) 100%);
+      border: 1px solid rgba(3, 102, 214, 0.1);
+    }
+
+    .feature-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(37, 99, 235, 0.4);
+      box-shadow: 0 20px 40px rgba(34, 197, 94, 0.15);
+      background: linear-gradient(135deg, rgba(20, 30, 50, 1) 0%, rgba(15, 23, 42, 1) 100%);
+    }
+
+    .light .feature-card:hover {
+      background: linear-gradient(135deg, rgba(240, 249, 255, 1) 0%, rgba(249, 250, 251, 1) 100%);
+      box-shadow: 0 20px 40px rgba(34, 197, 94, 0.1);
+    }
+
+    .feature-accent {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #22c55e, transparent);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .feature-card:hover .feature-accent {
+      transform: scaleX(1);
+    }
+
+    .feature-icon {
+      font-size: 40px;
+      margin-bottom: 16px;
+      animation: iconRotate 0.6s ease;
+    }
+
+    @keyframes iconRotate {
+      from {
+        opacity: 0;
+        transform: rotate(-15deg) scale(0.8);
+      }
+      to {
+        opacity: 1;
+        transform: rotate(0) scale(1);
+      }
+    }
+
+    .feature-card:hover .feature-icon {
+      animation: iconBounceSmall 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes iconBounceSmall {
+      0%, 100% {
+        transform: translateY(0) scale(1);
+      }
+      50% {
+        transform: translateY(-8px) scale(1.1);
+      }
+    }
+
+    .feature-card h3 {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 0 0 12px 0;
+      color: #fff;
+      transition: color 0.3s ease;
+    }
+
+    .light .feature-card h3 {
+      color: #1f2937;
     }
 
     .feature-card p {
       font-size: 14px;
       color: #9ca3af;
-      line-height: 1.6;
       margin: 0;
+      line-height: 1.6;
+      transition: color 0.3s ease;
     }
 
-    /* Раздел со статистикой */
+    .light .feature-card p {
+      color: #6b7280;
+    }
+
+    /* ===== STATS SECTION ===== */
     .stats-section {
-      margin: 80px 0;
-      padding: 60px 20px;
-      background: linear-gradient(135deg, #111827 0%, #0f172a 100%);
-      border: 1px solid rgba(34, 197, 94, 0.1);
-      border-radius: 24px;
-      animation: sectionFadeIn 1s ease 0.8s both;
-    }
-
-    .stats-container {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 32px;
       max-width: 1000px;
-      margin: 0 auto;
+      margin: 80px auto;
+      padding: 60px 40px;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(34, 197, 94, 0.05) 100%);
+      border: 1px solid rgba(37, 99, 235, 0.1);
+      border-radius: 24px;
+      animation: statsAppear 0.8s ease 1.3s both;
     }
 
-    .stat-card {
+    @keyframes statsAppear {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .light .stats-section {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(34, 197, 94, 0.05) 100%);
+      border-color: rgba(59, 130, 246, 0.1);
+    }
+
+    .stat-item {
       text-align: center;
-      padding: 32px;
-      background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1));
-      border-radius: 12px;
-      border: 1px solid rgba(34, 197, 94, 0.2);
-      transition: all 0.3s ease;
+      animation: statItemPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
     }
 
-    .stat-card:hover {
-      transform: translateY(-4px);
-      border-color: rgba(34, 197, 94, 0.4);
-      box-shadow: 0 8px 24px rgba(34, 197, 94, 0.15);
+    .stat-item:nth-child(1) { animation-delay: 1.4s; }
+    .stat-item:nth-child(2) { animation-delay: 1.5s; }
+    .stat-item:nth-child(3) { animation-delay: 1.6s; }
+    .stat-item:nth-child(4) { animation-delay: 1.7s; }
+
+    @keyframes statItemPop {
+      from {
+        opacity: 0;
+        transform: scale(0.5) rotateZ(-10deg);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) rotateZ(0);
+      }
     }
 
     .stat-number {
-      font-size: 42px;
-      font-weight: 900;
-      background: linear-gradient(135deg, #22c55e 0%, #3b82f6 100%);
+      font-size: 32px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #22c55e 0%, #22d3ee 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
       margin-bottom: 8px;
     }
 
+    .light .stat-number {
+      background: linear-gradient(135deg, #059669 0%, #0891b2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
     .stat-label {
       font-size: 14px;
       color: #9ca3af;
-      font-weight: 600;
+      font-weight: 500;
     }
 
-    @keyframes sectionFadeIn {
+    .light .stat-label {
+      color: #6b7280;
+    }
+
+    /* ===== CTA SECTION ===== */
+    .cta-section {
+      margin-top: 80px;
+      margin-bottom: 60px;
+      padding: 80px 40px;
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+      border: 2px solid rgba(37, 99, 235, 0.2);
+      border-radius: 28px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      animation: ctaAppear 0.8s ease 1.5s both;
+    }
+
+    @keyframes ctaAppear {
       from {
         opacity: 0;
         transform: translateY(40px);
@@ -391,127 +471,25 @@
       }
     }
 
-    /* Раздел "Как это работает" */
-    .demo-section {
-      margin: 80px 0;
-      padding: 60px 20px;
-      animation: sectionFadeIn 1s ease 1s both;
-    }
-
-    .demo-steps {
-      max-width: 900px;
-      margin: 0 auto;
-      position: relative;
-    }
-
-    .step-item {
-      display: flex;
-      gap: 24px;
-      margin-bottom: 48px;
-      animation: stepFadeIn 0.6s ease both;
-    }
-
-    .step-item[data-step="2"] {
-      animation-delay: 0.2s;
-    }
-
-    .step-item[data-step="3"] {
-      animation-delay: 0.4s;
-    }
-
-    @keyframes stepFadeIn {
-      from {
-        opacity: 0;
-        transform: translateX(-20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    .step-number {
-      flex-shrink: 0;
-      width: 56px;
-      height: 56px;
-      background: linear-gradient(135deg, #22c55e 0%, #22d3ee 100%);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      font-weight: 800;
-      color: #ffffff;
-      box-shadow: 0 8px 24px rgba(34, 197, 94, 0.3);
-    }
-
-    .step-content {
-      flex: 1;
-      background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-      border: 1px solid rgba(34, 197, 94, 0.2);
-      border-radius: 12px;
-      padding: 24px;
-      transition: all 0.3s ease;
-    }
-
-    .step-item:hover .step-content {
-      border-color: rgba(34, 197, 94, 0.5);
-      transform: translateX(8px);
-      box-shadow: 0 8px 24px rgba(34, 197, 94, 0.15);
-    }
-
-    .step-content h4 {
-      margin: 0 0 8px 0;
-      font-size: 18px;
-      color: #ffffff;
-    }
-
-    .step-content p {
-      margin: 0;
-      font-size: 14px;
-      color: #9ca3af;
-    }
-
-    .step-connector {
-      position: absolute;
-      left: 28px;
-      width: 2px;
-      height: 48px;
-      background: linear-gradient(180deg, rgba(34, 197, 94, 0.3), transparent);
-      margin-top: 56px;
-    }
-
-    /* CTA секция */
-    .cta-section {
-      margin: 80px 0 40px;
-      padding: 60px 40px;
-      background: linear-gradient(135deg, #22c55e 0%, #3b82f6 100%);
-      border-radius: 24px;
-      text-align: center;
-      animation: sectionFadeIn 1s ease 1.2s both;
-      position: relative;
-      overflow: hidden;
-    }
-
     .cta-section::before {
       content: '';
       position: absolute;
-      top: -50%;
-      right: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-      background-size: 50px 50px;
-      animation: bgMove 20s linear infinite;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      animation: ctaShine 3s infinite;
     }
 
-    @keyframes bgMove {
-      0% {
-        transform: translate(0, 0);
-      }
-      100% {
-        transform: translate(50px, 50px);
-      }
+    @keyframes ctaShine {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+
+    .light .cta-section {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%);
+      border-color: rgba(59, 130, 246, 0.2);
     }
 
     .cta-content {
@@ -519,17 +497,34 @@
       z-index: 1;
     }
 
-    .cta-section h3 {
-      font-size: 36px;
+    .cta-section h2 {
+      font-size: 40px;
       font-weight: 800;
-      margin: 0 0 12px;
-      color: #ffffff;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #22c55e 0%, #22d3ee 50%, #3b82f6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .light .cta-section h2 {
+      background: linear-gradient(135deg, #059669 0%, #0891b2 50%, #1d4ed8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
     .cta-section p {
-      font-size: 16px;
-      color: rgba(255, 255, 255, 0.9);
-      margin: 0 0 28px;
+      font-size: 18px;
+      color: #9ca3af;
+      margin-bottom: 32px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .light .cta-section p {
+      color: #6b7280;
     }
 
     .cta-buttons {
@@ -539,130 +534,127 @@
       flex-wrap: wrap;
     }
 
-    .btn-large {
-      padding: 14px 32px !important;
-      font-size: 16px !important;
-      font-weight: 700 !important;
+    .btn-cta-primary,
+    .btn-cta-secondary {
+      padding: 16px 36px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+      border: none;
     }
 
-    /* Light mode */
-    .light .features-section {
-      background: linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%);
+    .btn-cta-primary {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: #fff;
+      box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
     }
 
-    .light .feature-card {
-      background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
-      border-color: rgba(34, 197, 94, 0.3);
+    .btn-cta-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(34, 197, 94, 0.5);
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
     }
 
-    .light .feature-card:hover {
-      border-color: rgba(34, 197, 94, 0.6);
-      box-shadow: 0 12px 32px rgba(34, 197, 94, 0.15);
+    .btn-cta-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: #22c55e;
+      border: 2px solid #22c55e;
+      backdrop-filter: blur(10px);
     }
 
-    .light .feature-card h4 {
-      color: #1f2937;
+    .btn-cta-secondary:hover {
+      background: rgba(34, 197, 94, 0.1);
+      box-shadow: 0 8px 20px rgba(34, 197, 94, 0.2);
+      transform: translateY(-2px);
     }
 
-    .light .feature-card p {
-      color: #6b7280;
+    .light .btn-cta-secondary {
+      color: #059669;
+      border-color: #059669;
+      background: rgba(5, 150, 105, 0.05);
     }
 
-    .light .stats-section {
-      background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
-      border-color: rgba(34, 197, 94, 0.15);
+    .light .btn-cta-secondary:hover {
+      background: rgba(5, 150, 105, 0.1);
+      box-shadow: 0 8px 20px rgba(5, 150, 105, 0.15);
     }
 
-    .light .stat-card {
-      background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(59, 130, 246, 0.08));
-      border-color: rgba(34, 197, 94, 0.3);
-    }
-
-    .light .step-content {
-      background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
-      border-color: rgba(34, 197, 94, 0.3);
-    }
-
-    .light .step-content h4 {
-      color: #1f2937;
-    }
-
-    .light .step-content p {
-      color: #6b7280;
-    }
-
-    /* Оптимизация для мобильных */
+    /* ===== RESPONSIVE ===== */
     @media (max-width: 768px) {
-      .features-section,
-      .stats-section,
-      .demo-section,
-      .cta-section {
-        margin: 60px 0;
-        padding: 40px 16px;
+      .features-section {
+        margin-top: 60px;
+        margin-bottom: 60px;
       }
 
-      .section-title {
-        font-size: 24px;
-        margin-bottom: 32px;
+      .features-title {
+        font-size: 28px;
+        margin-bottom: 36px;
       }
 
       .features-grid {
-        grid-template-columns: 1fr;
         gap: 16px;
       }
 
-      .stats-container {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
+      .feature-card {
+        padding: 24px 16px;
       }
 
-      .step-item {
-        gap: 16px;
-        margin-bottom: 32px;
+      .stats-section {
+        margin: 60px auto;
+        padding: 40px 24px;
+        gap: 24px;
       }
 
-      .step-connector {
-        left: 28px;
-        height: 32px;
-        margin-top: 56px;
-      }
-
-      .cta-section {
-        padding: 40px 20px;
-      }
-
-      .cta-section h3 {
+      .stat-number {
         font-size: 24px;
       }
 
+      .cta-section {
+        margin-top: 60px;
+        margin-bottom: 40px;
+        padding: 48px 24px;
+      }
+
+      .cta-section h2 {
+        font-size: 28px;
+      }
+
+      .cta-section p {
+        font-size: 16px;
+      }
+
       .cta-buttons {
-        flex-direction: column;
         gap: 12px;
       }
 
-      .btn-large {
-        width: 100%;
+      .btn-cta-primary,
+      .btn-cta-secondary {
+        padding: 14px 28px;
+        font-size: 14px;
+        flex: 1;
+        min-width: 140px;
       }
     }
 
-    /* Оптимизация анимаций для мобильных */
     @media (prefers-reduced-motion: reduce) {
-      .nova-logo,
-      .nova-icon,
-      .header h1,
-      .landing-text h2,
-      .landing-text p,
-      .landing-actions,
-      .preview-window,
-      .feature-card,
-      .feature-icon,
-      .stat-card,
-      .step-item,
-      .step-content,
+      .features-section,
+      .stats-section,
       .cta-section,
+      .feature-card,
+      .stat-item,
+      .feature-accent,
+      .feature-icon,
       .cta-section::before {
         animation: none !important;
-        transition: none !important;
+      }
+
+      .feature-card:hover,
+      .btn-cta-primary:hover,
+      .btn-cta-secondary:hover {
+        transform: none !important;
       }
     }
   </style>
@@ -731,103 +723,77 @@
       </div>
     </div>
 
-    <!-- Раздел с особенностями -->
+    <!-- Карточки с преимуществами -->
     <section class="features-section">
-      <h3 class="section-title">Почему выбирают Nexora?</h3>
+      <h2 class="features-title">Почему выбирают Nexora</h2>
       <div class="features-grid">
-        <div class="feature-card" data-feature="speed">
+        <div class="feature-card">
           <div class="feature-icon">⚡</div>
-          <h4>Молниеносно быстро</h4>
-          <p>Сообщения доставляются в реальном времени без задержек и лагов</p>
+          <h3>Молниеносная скорость</h3>
+          <p>Сообщения доставляются в реальном времени без задержек</p>
+          <div class="feature-accent"></div>
         </div>
-        <div class="feature-card" data-feature="voice">
+        <div class="feature-card">
           <div class="feature-icon">🎤</div>
-          <h4>Голосовые сообщения</h4>
-          <p>Отправляй аудио заметки с одним нажатием кнопки</p>
+          <h3>Голосовые сообщения</h3>
+          <p>Записывай и отправляй голосовые без ограничений по времени</p>
+          <div class="feature-accent"></div>
         </div>
-        <div class="feature-card" data-feature="files">
-          <div class="feature-icon">📁</div>
-          <h4>Обмен файлами</h4>
-          <p>Делись документами, фотографиями и видео легко и просто</p>
-        </div>
-        <div class="feature-card" data-feature="stickers">
-          <div class="feature-icon">🎨</div>
-          <h4>Стикеры и эмодзи</h4>
-          <p>Огромная библиотека стикеров для выражения эмоций</p>
-        </div>
-        <div class="feature-card" data-feature="privacy">
+        <div class="feature-card">
           <div class="feature-icon">🔒</div>
-          <h4>Приватность</h4>
-          <p>Твои сообщения защищены с использованием современной шифрации</p>
+          <h3>Конфиденциальность</h3>
+          <p>Все ваши данные защищены с максимальной безопасностью</p>
+          <div class="feature-accent"></div>
         </div>
-        <div class="feature-card" data-feature="mobile">
+        <div class="feature-card">
           <div class="feature-icon">📱</div>
-          <h4>Работает везде</h4>
-          <p>Web, мобильный браузер, PWA приложение — выбирай сам</p>
+          <h3>Везде с вами</h3>
+          <p>Работает на всех устройствах — компьютер, планшет, телефон</p>
+          <div class="feature-accent"></div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">👥</div>
+          <h3>Групповые чаты</h3>
+          <p>Общайтесь с друзьями и коллегами в комфортной обстановке</p>
+          <div class="feature-accent"></div>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎨</div>
+          <h3>Красивый дизайн</h3>
+          <p>Интуитивный интерфейс, который радует глаз каждый день</p>
+          <div class="feature-accent"></div>
         </div>
       </div>
     </section>
 
-    <!-- Раздел со статистикой -->
+    <!-- Статистика -->
     <section class="stats-section">
-      <div class="stats-container">
-        <div class="stat-card">
-          <div class="stat-number" data-target="1000">0</div>
-          <div class="stat-label">Активных пользователей</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" data-target="50000">0</div>
-          <div class="stat-label">Сообщений в сутки</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" data-target="99.9">0</div>
-          <div class="stat-label">% Uptime</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-number" data-target="24">0</div>
-          <div class="stat-label">Часов поддержки</div>
-        </div>
+      <div class="stat-item">
+        <div class="stat-number">500K+</div>
+        <div class="stat-label">Активных пользователей</div>
       </div>
-    </section>
-
-    <!-- Интерактивная демонстрация -->
-    <section class="demo-section">
-      <h3 class="section-title">Как это работает</h3>
-      <div class="demo-steps">
-        <div class="step-item" data-step="1">
-          <div class="step-number">1</div>
-          <div class="step-content">
-            <h4>Войди или создай аккаунт</h4>
-            <p>Быстрая регистрация за несколько секунд</p>
-          </div>
-        </div>
-        <div class="step-connector"></div>
-        <div class="step-item" data-step="2">
-          <div class="step-number">2</div>
-          <div class="step-content">
-            <h4>Найди друзей</h4>
-            <p>Поиск и добавление контактов в один клик</p>
-          </div>
-        </div>
-        <div class="step-connector"></div>
-        <div class="step-item" data-step="3">
-          <div class="step-number">3</div>
-          <div class="step-content">
-            <h4>Начни общаться</h4>
-            <p>Отправляй сообщения, голос, файлы и стикеры</p>
-          </div>
-        </div>
+      <div class="stat-item">
+        <div class="stat-number">1M+</div>
+        <div class="stat-label">Сообщений в день</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">99.9%</div>
+        <div class="stat-label">Uptime</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number">24/7</div>
+        <div class="stat-label">Техническая поддержка</div>
       </div>
     </section>
 
     <!-- CTA секция -->
     <section class="cta-section">
       <div class="cta-content">
-        <h3>Готов к общению?</h3>
-        <p>Присоединяйся к тысячам пользователей Nexora</p>
+        <h2>Готов начать общаться?</h2>
+        <p>Присоединяйся к сотням тысяч пользователей Nexora</p>
         <div class="cta-buttons">
-          <a href="/chat" class="btn-primary btn-large">🚀 Начать прямо сейчас</a>
-          <a href="/register.html" class="btn-secondary btn-large">📝 Создать аккаунт</a>
+          <a href="/chat" class="btn-cta-primary">Открыть чат</a>
+          <a href="/register.html" class="btn-cta-secondary">Регистрация</a>
         </div>
       </div>
     </section>
@@ -919,70 +885,6 @@
       installBtn.style.display = "none";
     }
   });
-
-  // Счетчик статистики с анимацией
-  function animateCounters() {
-    const stats = document.querySelectorAll('.stat-number');
-    
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting && !entry.target.dataset.animated) {
-          entry.target.dataset.animated = 'true';
-          const target = parseFloat(entry.target.dataset.target);
-          const start = 0;
-          const duration = 2000;
-          const startTime = Date.now();
-
-          const animate = () => {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            
-            // Easing function
-            const easeOut = 1 - Math.pow(1 - progress, 3);
-            const current = start + (target - start) * easeOut;
-            
-            if (target > 100) {
-              entry.target.textContent = Math.floor(current).toLocaleString('ru-RU');
-            } else {
-              entry.target.textContent = current.toFixed(1);
-            }
-
-            if (progress < 1) {
-              requestAnimationFrame(animate);
-            }
-          };
-
-          animate();
-        }
-      });
-    }, { threshold: 0.5 });
-
-    stats.forEach(stat => observer.observe(stat));
-  }
-
-  // Интерактивность карточек
-  function setupFeatureCards() {
-    const cards = document.querySelectorAll('.feature-card');
-    cards.forEach(card => {
-      card.addEventListener('mouseenter', function() {
-        this.style.zIndex = '10';
-      });
-      card.addEventListener('mouseleave', function() {
-        this.style.zIndex = '1';
-      });
-    });
-  }
-
-  // Запускаем при загрузке
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      animateCounters();
-      setupFeatureCards();
-    });
-  } else {
-    animateCounters();
-    setupFeatureCards();
-  }
 </script>
 </body>
 </html>
