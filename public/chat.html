@@ -1678,7 +1678,7 @@
       <div style="height: 100%; display: flex; flex-direction: column;">
       <div style="padding: 20px; text-align: center; color: #9ca3af; flex: 0 0 auto;">
         <div style="font-size: 60px; margin-bottom: 10px;">🤖</div>
-        <h2 id="bot-chat-title" style="color: #e5e7eb; margin-bottom: 6px; cursor: pointer;">${escapeHtml(bot.name)}</h2>
+        <h2 id="bot-chat-title" style="color: #e5e7eb; margin-bottom: 6px;">${escapeHtml(bot.name)}</h2>
         <p style="margin-bottom: 10px;">${escapeHtml(bot.description || "")}</p>
         <div style="font-size: 14px; color: #6b7280; margin: 10px 0;">
           👥 ${bot.subscriber_count || 0} подписчиков
@@ -1697,10 +1697,7 @@
       </div>
     `;
 
-    const botChatTitle = document.getElementById("bot-chat-title");
-    if (botChatTitle) {
-      botChatTitle.addEventListener("click", () => openNexisProfile(bot));
-    }
+
 
     const inputEl = document.getElementById("bot-command-input");
     const sendBtn = document.getElementById("bot-command-send");
