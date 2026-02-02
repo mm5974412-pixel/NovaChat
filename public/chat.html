@@ -1675,6 +1675,11 @@
       window.currentNexphereId = null;
     }
 
+    // На мобилке переключаемся в режим "диалога"
+    if (isMobile()) {
+      document.body.classList.add("mobile-dialog-open");
+    }
+
     if (chatTitleEl) chatTitleEl.textContent = `🤖 ${bot.name}`;
     if (chatSubtitleEl) chatSubtitleEl.textContent = bot.description || "Бот Nexis";
 
@@ -2105,6 +2110,11 @@
 
     // Очищаем область сообщений
     messagesDiv.innerHTML = "";
+
+    // На мобилке переключаемся в режим "диалога"
+    if (isMobile()) {
+      document.body.classList.add("mobile-dialog-open");
+    }
 
     // Показываем/скрываем форму ввода в зависимости от роли
     if (form) {
@@ -3026,6 +3036,8 @@
 
       document.body.classList.remove("mobile-dialog-open");
       currentChatId = null;
+      currentNexusView = null;
+      currentBotData = null;
       messagesDiv.innerHTML = "";
 
       if (chatTitleEl) chatTitleEl.textContent = "Nexora";
