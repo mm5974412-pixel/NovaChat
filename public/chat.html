@@ -1738,6 +1738,7 @@
     const createdAt = bot.created_at ? new Date(bot.created_at) : null;
     const createdText = createdAt ? createdAt.toLocaleString("ru-RU") : "Неизвестно";
     const statusText = bot.is_active === false ? "Отключен" : "Активен";
+    const isCreator = currentUser?.id === bot.creator_id;
 
     nexisProfileStats.innerHTML = `
       <div style="padding: 10px; border-radius: 10px; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(148, 163, 184, 0.15);">
@@ -1756,7 +1757,49 @@
         <div style="font-size: 12px; color: var(--text-secondary);">Тип</div>
         <div style="font-weight: 600; margin-top: 4px;">Nexis Bot</div>
       </div>
+      ${isCreator ? `
+      <div style="grid-column: 1 / -1; padding: 12px; border-radius: 10px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); text-align: center;">
+        <button id="delete-bot-btn" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.5); background: rgba(239, 68, 68, 0.2); color: #fca5a5; cursor: pointer; font-weight: 500; transition: all 0.2s;">🗑️ Удалить бота</button>
+      </div>
+      ` : ''}
     `;
+
+    if (isCreator) {
+      setTimeout(() => {
+        const deleteBtn = document.getElementById('delete-bot-btn');
+        if (deleteBtn) {
+          deleteBtn.addEventListener('click', async () => {
+            showConfirm(
+              `Вы точно хотите удалить бота "${bot.name}"? Это действие нельзя отменить.`,
+              "Удаление бота",
+              async () => {
+                try {
+                  const response = await fetch(`/api/bots/${bot.id}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                  });
+                  const data = await response.json();
+                  if (!response.ok) {
+                    showAlert(data.error || 'Ошибка удаления', 'Ошибка', 'ОК', 'danger');
+                    return;
+                  }
+                  showAlert(`Бот "${bot.name}" удален`, 'Успех', 'ОК', 'success');
+                  nexisProfileModal.style.display = 'none';
+                  loadChats();
+                } catch (err) {
+                  console.error(err);
+                  showAlert('Ошибка удаления бота', 'Ошибка', 'ОК', 'danger');
+                }
+              },
+              null,
+              'Удалить',
+              'Отмена',
+              'danger'
+            );
+          });
+        }
+      }, 0);
+    }
 
     nexisProfileModal.style.display = "flex";
     applyThemeToModal(nexisProfileModal.querySelector('.confirm-modal-content'));

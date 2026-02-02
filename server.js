@@ -4028,6 +4028,33 @@ app.post("/api/bots/:botId/command", async (req, res) => {
   }
 });
 
+// Удалить бота (только создатель)
+app.delete("/api/bots/:botId", async (req, res) => {
+  if (!req.session.user || !req.session.user.id) {
+    return res.status(401).json({ ok: false, error: "Unauthorized" });
+  }
+
+  const { botId } = req.params;
+
+  try {
+    const bot = await pool.query("SELECT * FROM nexis_bots WHERE id = $1", [botId]);
+    if (bot.rows.length === 0) {
+      return res.status(404).json({ ok: false, error: "Bot not found" });
+    }
+
+    if (bot.rows[0].creator_id !== req.session.user.id) {
+      return res.status(403).json({ ok: false, error: "Only creator can delete bot" });
+    }
+
+    await pool.query("DELETE FROM nexis_bots WHERE id = $1", [botId]);
+
+    res.json({ ok: true, message: "Bot deleted" });
+  } catch (err) {
+    console.error("Bot deletion error:", err);
+    res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
 // Обработать клик по кнопке бота
 app.post("/api/bots/:botId/button-click", async (req, res) => {
   if (!req.session.user || !req.session.user.id) {
