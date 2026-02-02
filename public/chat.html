@@ -1512,6 +1512,140 @@
       });
   }
   
+  // Добавить бота в нексоленту (левый список) без перезагрузки
+  function addBotToChatList(bot, options = {}) {
+    if (!chatList || !bot || !bot.id) return;
+
+    const existing = chatList.querySelector(`li[data-bot-id="${bot.id}"]`);
+    if (existing) return;
+
+    // Удаляем плейсхолдер, если он есть
+    const placeholder = Array.from(chatList.querySelectorAll("li")).find((li) =>
+      li.textContent?.includes("У вас пока нет чатов, нексусов, нексфер или ботов.")
+    );
+    if (placeholder) placeholder.remove();
+
+    const li = document.createElement("li");
+    li.classList.add("chat-item");
+    li.dataset.botId = bot.id;
+    li.dataset.type = "bot";
+
+    const avatar = document.createElement("div");
+    avatar.classList.add("chat-avatar");
+    if (bot.avatar_url) {
+      avatar.style.backgroundImage = `url('${bot.avatar_url}')`;
+      avatar.style.backgroundSize = 'cover';
+      avatar.style.backgroundPosition = 'center';
+    } else {
+      avatar.textContent = "🤖";
+      avatar.style.fontSize = "20px";
+    }
+
+    const meta = document.createElement("div");
+    meta.classList.add("chat-meta");
+
+    const name = document.createElement("div");
+    name.classList.add("chat-name");
+    name.textContent = bot.name;
+
+    const last = document.createElement("div");
+    last.classList.add("chat-last");
+    last.textContent = `🤖 Бот · ${bot.subscriber_count || 0} подписчиков`;
+
+    meta.appendChild(name);
+    meta.appendChild(last);
+    li.appendChild(avatar);
+    li.appendChild(meta);
+
+    li.addEventListener("click", () => {
+      document.querySelectorAll(".chat-item").forEach((el) => el.classList.remove("chat-item-active"));
+      li.classList.add("chat-item-active");
+      showBotInfo(bot);
+    });
+
+    if (options.prepend && chatList.firstChild) {
+      chatList.insertBefore(li, chatList.firstChild);
+    } else {
+      chatList.appendChild(li);
+    }
+  }
+
+  // Внутренние сообщения для бота (минимальная функциональность)
+  function appendBotChatMessage(author, text, isMe = false) {
+    const container = document.getElementById("bot-chat-messages");
+    if (!container) return;
+
+    const wrapper = document.createElement("div");
+    wrapper.style.cssText = `display: flex; justify-content: ${isMe ? 'flex-end' : 'flex-start'}; margin: 6px 0;`;
+
+    const bubble = document.createElement("div");
+    bubble.style.cssText = `max-width: 75%; padding: 10px 12px; border-radius: 12px; background: ${isMe ? 'rgba(139,92,246,0.25)' : 'rgba(15,23,42,0.6)'}; border: 1px solid rgba(148,163,184,0.15); color: #e5e7eb;`;
+
+    const authorEl = document.createElement("div");
+    authorEl.style.cssText = "font-size: 11px; color: #9ca3af; margin-bottom: 4px;";
+    authorEl.textContent = author || "Бот";
+
+    const textEl = document.createElement("div");
+    textEl.textContent = text || "";
+
+    bubble.appendChild(authorEl);
+    bubble.appendChild(textEl);
+    wrapper.appendChild(bubble);
+    container.appendChild(wrapper);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  async function sendBotCommandFromChat(bot, command) {
+    if (!bot || !bot.id || !command) return;
+
+    if (currentUser?.username) {
+      appendBotChatMessage(currentUser.username, command, true);
+    }
+
+    try {
+      const response = await fetch(`/api/bots/${bot.id}/command`, {
+        method: "POST",
+        credentials: 'include',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command })
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "Ошибка выполнения команды");
+      }
+
+      appendBotChatMessage(bot.name, data.response?.text || "Готово");
+
+      const buttons = data.response?.buttons || [];
+      if (Array.isArray(buttons) && buttons.length > 0) {
+        const actionsContainer = document.getElementById("bot-chat-actions");
+        if (actionsContainer) {
+          const mapActionToCommand = {
+            help: "/help",
+            settings: "/settings",
+            notifications: "/settings",
+            theme: "/settings"
+          };
+          buttons.forEach((btn) => {
+            const actionBtn = document.createElement("button");
+            actionBtn.textContent = btn.text || "Действие";
+            actionBtn.style.cssText = "padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(139,92,246,0.4); background: rgba(139,92,246,0.15); color: #e5e7eb; cursor: pointer;";
+            actionBtn.addEventListener("click", () => {
+              const mapped = mapActionToCommand[btn.action];
+              if (mapped) {
+                sendBotCommandFromChat(bot, mapped);
+              }
+            });
+            actionsContainer.appendChild(actionBtn);
+          });
+        }
+      }
+    } catch (err) {
+      appendBotChatMessage(bot.name, err.message || "Ошибка выполнения команды");
+    }
+  }
+
   // Показать информацию о боте в main area
   function showBotInfo(bot) {
     currentChatId = null;
@@ -1524,19 +1658,40 @@
     if (chatTitleEl) chatTitleEl.textContent = `🤖 ${bot.name}`;
     if (chatSubtitleEl) chatSubtitleEl.textContent = bot.description || "Бот Nexis";
 
+    const isOwner = currentUser?.id && bot.creator_id && currentUser.id === bot.creator_id;
     messagesDiv.innerHTML = `
-      <div style="padding: 40px 20px; text-align: center; color: #9ca3af;">
-        <div style="font-size: 60px; margin-bottom: 20px;">🤖</div>
-        <h2 style="color: #e5e7eb; margin-bottom: 10px;">${escapeHtml(bot.name)}</h2>
-        <p style="margin-bottom: 20px;">${escapeHtml(bot.description || "")}</p>
-        <div style="font-size: 14px; color: #6b7280; margin: 20px 0;">
+      <div style="padding: 20px; text-align: center; color: #9ca3af;">
+        <div style="font-size: 60px; margin-bottom: 10px;">🤖</div>
+        <h2 style="color: #e5e7eb; margin-bottom: 6px;">${escapeHtml(bot.name)}</h2>
+        <p style="margin-bottom: 10px;">${escapeHtml(bot.description || "")}</p>
+        <div style="font-size: 14px; color: #6b7280; margin: 10px 0;">
           👥 ${bot.subscriber_count || 0} подписчиков
         </div>
-        <div style="background: rgba(139, 92, 246, 0.1); padding: 20px; border-radius: 10px; margin-top: 20px; max-width: 500px; margin-left: auto; margin-right: auto;">
-          <p style="color: #a78bfa;">💡 Это ваш бот Nexis. Пользователи, подписавшиеся на него, видят обновления в своей нексоленте.</p>
-        </div>
+        ${isOwner ? `
+          <div style="background: rgba(139, 92, 246, 0.1); padding: 12px; border-radius: 10px; margin: 10px auto 0; max-width: 500px;">
+            <p style="color: #a78bfa; margin: 0;">💡 Это ваш бот Nexis. Пользователи, подписавшиеся на него, видят обновления в своей нексоленте.</p>
+          </div>
+        ` : ""}
+        <div id="bot-chat-actions" style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 14px;"></div>
       </div>
+      <div id="bot-chat-messages" style="padding: 10px 16px 20px; display: flex; flex-direction: column;"></div>
     `;
+
+    const actions = document.getElementById("bot-chat-actions");
+    if (actions) {
+      const buttons = [
+        { label: "/start", cmd: "/start" },
+        { label: "/help", cmd: "/help" },
+        { label: "/settings", cmd: "/settings" }
+      ];
+      buttons.forEach((btn) => {
+        const el = document.createElement("button");
+        el.textContent = btn.label;
+        el.style.cssText = "padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(139,92,246,0.4); background: rgba(139,92,246,0.15); color: #e5e7eb; cursor: pointer;";
+        el.addEventListener("click", () => sendBotCommandFromChat(bot, btn.cmd));
+        actions.appendChild(el);
+      });
+    }
     
     if (form) {
       form.style.display = "none";
@@ -1553,8 +1708,11 @@
   });
 
   // 🤖 Когда создан новый бот — обновляем нексолету
-  socket.on("bot-created", () => {
+  socket.on("bot-created", (bot) => {
     console.log("Bot created event received, updating chats");
+    if (bot && currentUser?.id && bot.creator_id === currentUser.id) {
+      addBotToChatList(bot, { prepend: true });
+    }
     loadChats();
   });
 
@@ -4490,6 +4648,9 @@
         const result = await createBot(name, description, avatarUrl);
         closeBotCreateModal();
         showAlert(`Бот "${name}" создан! 🤖`, "Успех", "ОК", "success");
+        if (result?.bot) {
+          addBotToChatList(result.bot, { prepend: true });
+        }
         loadBots("explore");
         // Небольшая задержка перед загрузкой чатов для синхронизации БД
         setTimeout(() => {

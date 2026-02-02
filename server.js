@@ -3796,7 +3796,7 @@ app.post("/api/bots", async (req, res) => {
     const result = await pool.query(`
       INSERT INTO nexis_bots (name, description, avatar_url, creator_id, commands)
       VALUES ($1, $2, $3, $4, $5)
-      RETURNING id, name, description, avatar_url, is_active, created_at
+      RETURNING id, name, description, avatar_url, is_active, created_at, creator_id
     `, [
       name,
       description || null,
@@ -3814,8 +3814,13 @@ app.post("/api/bots", async (req, res) => {
       ON CONFLICT (bot_id, user_id) DO NOTHING
     `, [botId, req.session.user.id]);
 
-    io.emit("bot-created", result.rows[0]);
-    res.json({ ok: true, bot: result.rows[0] });
+    const createdBot = {
+      ...result.rows[0],
+      subscriber_count: 1
+    };
+
+    io.emit("bot-created", createdBot);
+    res.json({ ok: true, bot: createdBot });
   } catch (err) {
     if (err.code === '23505') { // Уникальное нарушение
       return res.status(400).json({ ok: false, error: "Bot name already exists" });
