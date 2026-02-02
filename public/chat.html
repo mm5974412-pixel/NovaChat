@@ -1686,7 +1686,7 @@
     const isOwner = currentUser?.id && bot.creator_id && currentUser.id === bot.creator_id;
     messagesDiv.innerHTML = `
       <div style="height: 100%; display: flex; flex-direction: column;">
-      <div style="padding: 20px; text-align: center; color: #9ca3af; flex: 0 0 auto;">
+      <div id="bot-header-section" style="padding: 20px; text-align: center; color: #9ca3af; flex: 0 0 auto;">
         <div style="font-size: 60px; margin-bottom: 10px;">🤖</div>
         <h2 id="bot-chat-title" style="color: #e5e7eb; margin-bottom: 6px;">${escapeHtml(bot.name)}</h2>
         <p style="margin-bottom: 10px;">${escapeHtml(bot.description || "")}</p>
@@ -1715,6 +1715,13 @@
       const value = inputEl?.value?.trim();
       if (!value) return;
       if (inputEl) inputEl.value = "";
+      
+      // Скрываем заголовок при первой команде
+      const headerSection = document.getElementById("bot-header-section");
+      if (headerSection) {
+        headerSection.style.display = "none";
+      }
+      
       sendBotCommandFromChat(bot, value);
     };
 
