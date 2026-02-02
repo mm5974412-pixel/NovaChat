@@ -1,10 +1,21 @@
 {
   "name": "novachat",
   "version": "1.0.0",
-  "description": "NovaChat messenger",
+  "description": "NovaChat - Кросс-платформенный мессенджер (веб, Electron, React Native)",
   "main": "server.js",
+  "author": "NovaChat Team",
+  "license": "MIT",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js",
+    "prod": "NODE_ENV=production node server.js",
+    "electron:dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:build": "npm install --prefix electron && electron-builder --publish never",
+    "mobile:install": "cd mobile && npm install && cd ..",
+    "mobile:android": "cd mobile && npm run android && cd ..",
+    "mobile:ios": "cd mobile && npm run ios && cd ..",
+    "mobile:build:android": "cd mobile && npm run build:android && cd ..",
+    "mobile:build:ios": "cd mobile && npm run build:ios && cd .."
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -16,5 +27,13 @@
     "multer": "^1.4.5-lts.1",
     "pg": "^8.11.0",
     "socket.io": "^4.7.2"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "wait-on": "^7.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
   }
 }

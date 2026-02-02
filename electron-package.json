@@ -1,0 +1,93 @@
+{
+  "name": "novachat-desktop",
+  "version": "1.0.0",
+  "description": "NovaChat - Кросс-платформенный мессенджер. Десктопная версия",
+  "main": "electron/main.js",
+  "homepage": "./",
+  "author": {
+    "name": "NovaChat Team"
+  },
+  "license": "MIT",
+  "scripts": {
+    "react-start": "react-scripts start",
+    "react-build": "react-scripts build",
+    "electron-start": "concurrently \"npm run react-start\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron-dev": "concurrently \"npm run react-start\" \"wait-on http://localhost:3000 && electron . --inspect=5858\"",
+    "electron-build": "npm run react-build && electron-builder",
+    "build": "npm run react-build",
+    "build-windows": "npm run react-build && electron-builder --win",
+    "build-mac": "npm run react-build && electron-builder --mac",
+    "build-linux": "npm run react-build && electron-builder --linux",
+    "build-all": "npm run react-build && electron-builder -mwl",
+    "publish": "npm run react-build && electron-builder --publish always"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "connect-pg-simple": "^9.0.0",
+    "dotenv": "^17.2.3",
+    "electron-is-dev": "^3.0.0",
+    "electron-store": "^8.1.0",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.5.1",
+    "express-session": "^1.17.3",
+    "multer": "^1.4.5-lts.1",
+    "pg": "^8.11.0",
+    "socket.io": "^4.7.2"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "electron": "^27.0.0",
+    "electron-builder": "^24.6.4",
+    "electron-dev-tools": "^1.0.0",
+    "wait-on": "^7.0.1"
+  },
+  "build": {
+    "appId": "com.novachat.desktop",
+    "productName": "NovaChat",
+    "directories": {
+      "buildResources": "public/icons"
+    },
+    "files": [
+      "electron/**/*",
+      "public/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.utilities"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Chat"
+    }
+  }
+}
