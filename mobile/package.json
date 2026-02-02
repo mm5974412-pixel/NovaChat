@@ -8,8 +8,8 @@
     "start": "react-native start",
     "test": "jest",
     "lint": "eslint .",
-    "build:android": "cd android && ./gradlew assembleRelease",
-    "build:android:aab": "cd android && ./gradlew bundleRelease",
+    "build:android": "cd android && gradlew.bat assembleRelease",
+    "build:android:aab": "cd android && gradlew.bat bundleRelease",
     "build:ios": "cd ios && xcodebuild -workspace NovaChat.xcworkspace -scheme NovaChat -configuration Release -derivedDataPath build"
   },
   "dependencies": {
