@@ -1296,6 +1296,9 @@
         const nexuses = nexusData.ok && nexusData.nexus ? nexusData.nexus : [];
         const nexpheres = nexphereData.ok && nexphereData.nexpheres ? nexphereData.nexpheres : [];
         const bots = botsData.ok && botsData.bots ? botsData.bots : [];
+        
+        console.log("loadChats data:", { chats: chats.length, nexuses: nexuses.length, nexpheres: nexpheres.length, bots: bots.length, botsData });
+        
         const allItems = [...(chats || []), ...(nexuses || []), ...(nexpheres || []), ...(bots || [])];
 
         if (allItems.length === 0) {
@@ -1547,6 +1550,12 @@
     if (currentChatId) {
       loadMessages(currentChatId);
     }
+  });
+
+  // 🤖 Когда создан новый бот — обновляем нексолету
+  socket.on("bot-created", () => {
+    console.log("Bot created event received, updating chats");
+    loadChats();
   });
 
   // Кнопка "Нексация" - поиск
@@ -4482,7 +4491,10 @@
         closeBotCreateModal();
         showAlert(`Бот "${name}" создан! 🤖`, "Успех", "ОК", "success");
         loadBots("explore");
-        loadChats(); // Обновляем нексолету с новым ботом
+        // Небольшая задержка перед загрузкой чатов для синхронизации БД
+        setTimeout(() => {
+          loadChats();
+        }, 500);
       } catch (err) {
         console.error(err);
         botCreateError.textContent = err.message;
