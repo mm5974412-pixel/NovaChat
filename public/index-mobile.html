@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#020617" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="description" content="Nexora — быстрый и безопасный мессенджер нового поколения" />
+  <meta name="keywords" content="мессенджер, чат, общение, nexora" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75' fill='%2322c55e'>N</text></svg>" />
+  <title>Nexora — современный мессенджер</title>
+
+  <style>
+    :root {
+      --primary: #22c55e;
+      --primary-dark: #16a34a;
+      --secondary: #3b82f6;
+      --accent: #8b5cf6;
+      --dark: #020617;
+      --text: #e5e7eb;
+      --text-muted: #9ca3af;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(180deg, #0a0c1a 0%, #020617 100%);
+      color: var(--text);
+      overflow-y: auto;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    html.light body {
+      background: linear-gradient(180deg, #f5f7fa 0%, #f8fafc 100%);
+      color: #1f2937;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: clamp(12px, 3vw, 20px) clamp(16px, 5vw, 32px);
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(10, 12, 26, 0.95));
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+      backdrop-filter: blur(10px);
+      gap: clamp(8px, 2vw, 16px);
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    html.light .header {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.95));
+      border-bottom-color: rgba(148, 163, 184, 0.2);
+    }
+
+    .header h1 {
+      font-size: clamp(18px, 4vw, 24px);
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+
+    .header nav {
+      display: flex;
+      gap: clamp(12px, 3vw, 20px);
+      align-items: center;
+      flex: 1;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .header a,
+    .header button {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: clamp(12px, 2vw, 14px);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      transition: var(--transition);
+      font-weight: 500;
+    }
+
+    .header a:hover,
+    .header button:hover {
+      color: var(--primary);
+    }
+
+    html.light .header a,
+    html.light .header button {
+      color: #6b7280;
+    }
+
+    html.light .header a:hover,
+    html.light .header button:hover {
+      color: var(--primary);
+    }
+
+    /* Main Content */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: clamp(20px, 5vw, 40px) clamp(16px, 4vw, 32px);
+    }
+
+    /* Hero Section */
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: clamp(20px, 5vw, 40px);
+      align-items: center;
+      margin-bottom: clamp(40px, 10vw, 80px);
+    }
+
+    @media (min-width: 768px) {
+      .hero {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .hero-content h2 {
+      font-size: clamp(28px, 7vw, 48px);
+      font-weight: 800;
+      margin-bottom: clamp(16px, 3vw, 24px);
+      line-height: 1.2;
+      background: linear-gradient(135deg, var(--text), var(--text-muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    html.light .hero-content h2 {
+      background: linear-gradient(135deg, #1f2937, #4b5563);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-content p {
+      font-size: clamp(14px, 2.5vw, 18px);
+      color: var(--text-muted);
+      margin-bottom: clamp(20px, 4vw, 32px);
+      line-height: 1.6;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(10px, 2vw, 16px);
+      flex-wrap: wrap;
+    }
+
+    @media (min-width: 600px) {
+      .hero-actions {
+        flex-direction: row;
+      }
+    }
+
+    .btn {
+      padding: clamp(12px, 2.5vw, 14px) clamp(20px, 4vw, 28px);
+      border: none;
+      border-radius: 999px;
+      font-size: clamp(14px, 2vw, 15px);
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #022c22;
+      box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(34, 197, 94, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background: rgba(148, 163, 184, 0.1);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(148, 163, 184, 0.2);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .hero-image {
+      display: none;
+    }
+
+    @media (min-width: 768px) {
+      .hero-image {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+
+    .preview-box {
+      background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+      border-radius: clamp(12px, 3vw, 20px);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      padding: clamp(12px, 2vw, 16px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      width: 100%;
+      max-width: 360px;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    html.light .preview-box {
+      background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+      border-color: rgba(148, 163, 184, 0.3);
+      color: #1f2937;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+
+    .preview-header {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    .preview-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4b5563;
+    }
+
+    .preview-title {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+
+    .preview-messages {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .preview-msg {
+      padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 12px);
+      border-radius: 12px;
+      font-size: 12px;
+      max-width: 80%;
+    }
+
+    .preview-msg.user {
+      align-self: flex-start;
+      background: rgba(107, 114, 128, 0.2);
+      color: var(--text);
+    }
+
+    .preview-msg.bot {
+      align-self: flex-end;
+      background: var(--secondary);
+      color: white;
+    }
+
+    /* Features Section */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: clamp(16px, 3vw, 24px);
+      margin-bottom: clamp(40px, 10vw, 80px);
+    }
+
+    .feature-card {
+      padding: clamp(20px, 4vw, 28px);
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.5), rgba(20, 30, 48, 0.3));
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 16px;
+      transition: var(--transition);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: center;
+    }
+
+    html.light .feature-card {
+      background: linear-gradient(135deg, rgba(248, 250, 252, 0.5), rgba(240, 244, 248, 0.3));
+      border-color: rgba(148, 163, 184, 0.3);
+    }
+
+    .feature-card:hover {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(20, 30, 48, 0.6));
+      border-color: var(--primary);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(34, 197, 94, 0.2);
+    }
+
+    .feature-icon {
+      font-size: clamp(32px, 6vw, 48px);
+      line-height: 1;
+    }
+
+    .feature-card h3 {
+      font-size: clamp(16px, 3vw, 18px);
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .feature-card p {
+      font-size: clamp(13px, 2vw, 14px);
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Footer */
+    .footer {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(10, 12, 26, 0.95));
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+      padding: clamp(24px, 5vw, 40px) clamp(16px, 4vw, 32px);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: clamp(12px, 2vw, 14px);
+      margin-top: auto;
+    }
+
+    html.light .footer {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.95));
+      border-top-color: rgba(148, 163, 184, 0.2);
+      color: #6b7280;
+    }
+
+    .footer a {
+      color: var(--primary);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .footer a:hover {
+      color: var(--secondary);
+      text-decoration: underline;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 600px) {
+      .header h1 {
+        flex: 1;
+        min-width: 200px;
+      }
+
+      .header nav {
+        flex-basis: 100%;
+        justify-content: center;
+      }
+
+      .hero-actions {
+        width: 100%;
+      }
+
+      .btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .preview-box {
+        margin: 0 auto;
+      }
+
+      .feature-card {
+        text-align: center;
+      }
+    }
+
+    @media (max-width: 480px) {
+      body {
+        overflow-y: scroll;
+        overflow-x: hidden;
+      }
+
+      .container {
+        padding: clamp(16px, 3vw, 20px);
+      }
+
+      .hero {
+        margin-bottom: clamp(30px, 8vw, 50px);
+      }
+
+      .hero-content h2 {
+        font-size: 24px;
+      }
+
+      .hero-content p {
+        font-size: 14px;
+      }
+
+      .btn {
+        width: 100%;
+        padding: 12px 16px;
+      }
+
+      .features {
+        gap: 12px;
+      }
+
+      .feature-card {
+        padding: 16px;
+      }
+    }
+
+    /* Accessibility */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--secondary);
+      outline-offset: 2px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <h1>✨ Nexora</h1>
+    <nav>
+      <a href="#features">Особенности</a>
+      <a href="/login.html">Вход</a>
+      <a href="/register.html" class="btn btn-primary">Регистрация</a>
+      <button id="theme-toggle-header" title="Переключить тему">🌙</button>
+    </nav>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-content">
+        <h2>Быстрый мессенджер нового поколения</h2>
+        <p>
+          Nexora — это современный мессенджер, разработанный для быстрого и безопасного общения.
+          Отправляйте сообщения, голосовые, видео и файлы в режиме реального времени.
+        </p>
+        <div class="hero-actions">
+          <a href="/register.html" class="btn btn-primary">🚀 Начать прямо сейчас</a>
+          <a href="/login.html" class="btn btn-secondary">→ Войти</a>
+        </div>
+      </div>
+
+      <div class="hero-image">
+        <div class="preview-box">
+          <div class="preview-header">
+            <div class="preview-dot"></div>
+            <div class="preview-dot"></div>
+            <div class="preview-dot"></div>
+            <span class="preview-title">Nexora</span>
+          </div>
+          <div class="preview-messages">
+            <div class="preview-msg user">Привет! 👋</div>
+            <div class="preview-msg bot">Добро пожаловать в Nexora! 🎉</div>
+            <div class="preview-msg user">Спасибо!</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features">
+      <h2 style="font-size: clamp(24px, 5vw, 32px); font-weight: 700; margin-bottom: clamp(20px, 4vw, 32px); text-align: center;">
+        Почему выбирают Nexora?
+      </h2>
+
+      <div class="features">
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>Молниеносная скорость</h3>
+          <p>Сообщения доставляются мгновенно благодаря WebSocket технологии</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <h3>Полная безопасность</h3>
+          <p>Все данные зашифрованы и защищены современными стандартами</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📱</div>
+          <h3>На всех устройствах</h3>
+          <p>Мобильный, планшет или ПК — везде одинаково удобно</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🎨</div>
+          <h3>Красивый интерфейс</h3>
+          <p>Темная и светлая тема для комфорта в любое время</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🎙️</div>
+          <h3>Голосовые сообщения</h3>
+          <p>Записывайте и отправляйте голос вместо текста</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📎</div>
+          <h3>Отправка файлов</h3>
+          <p>Делитесь фото, видео, документами без ограничений</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>&copy; 2024 Nexora. <a href="#">Политика конфиденциальности</a> · <a href="#">Условия использования</a></p>
+  </footer>
+
+  <script src="/theme-toggle.js"></script>
+  <script>
+    // Theme toggle for header
+    const headerThemeBtn = document.getElementById('theme-toggle-header');
+    if (headerThemeBtn) {
+      headerThemeBtn.addEventListener('click', () => {
+        const isLight = document.documentElement.classList.toggle('light');
+        localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        headerThemeBtn.textContent = isLight ? '☀️' : '🌙';
+      });
+
+      // Set initial icon
+      const isDark = !document.documentElement.classList.contains('light');
+      headerThemeBtn.textContent = isDark ? '🌙' : '☀️';
+    }
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        const href = link.getAttribute('href');
+        if (href !== '#' && document.querySelector(href)) {
+          e.preventDefault();
+          document.querySelector(href).scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    });
+  </script>
+</body>
+</html>

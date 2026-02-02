@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Nexora" />
+  <meta name="theme-color" content="#020617" />
+  <meta name="color-scheme" content="dark light" />
+  <title>Nexora — чат</title>
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="/style-mobile.css" />
+  <link rel="stylesheet" href="/style-v2.css" />
+  
+  <style>
+    html { background: #020617; }
+    html.light { background: #f8fafc; }
+  </style>
+
+  <script>
+    // Theme loading before paint
+    (function() {
+      const savedTheme = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const shouldBeLight = savedTheme === 'light' || (!savedTheme && !prefersDark);
+      if (shouldBeLight) {
+        document.documentElement.classList.add('light');
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div class="app">
+    <!-- SIDEBAR: Список чатов -->
+    <aside class="sidebar" id="sidebar">
+      <!-- Header -->
+      <div class="sidebar-header">
+        <div class="logo-circle">✨</div>
+        <div class="logo-text">
+          <div class="logo-name">Nexora</div>
+          <div class="logo-subtitle">мессенджер</div>
+        </div>
+      </div>
+
+      <!-- Current User Profile -->
+      <div class="current-user" id="profile-link" title="Открыть профиль">
+        <span class="current-user-label">Вы:</span>
+        <span class="current-user-name" id="current-username">...</span>
+      </div>
+
+      <!-- Theme Toggle -->
+      <button id="theme-toggle" class="btn-ghost" style="width: 100%;" title="Переключить тему">
+        <span id="theme-icon">🌙</span> <span id="theme-text">Темная</span>
+      </button>
+
+      <!-- Actions: Nexus & Create -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <button id="nexus-btn" class="btn-secondary" title="Найти нексусы" style="width: 100%;">
+          🔍 Нексусы
+        </button>
+        <button id="create-btn" class="btn-secondary" title="Создать чат" style="width: 100%;">
+          ➕ Создать
+        </button>
+      </div>
+
+      <!-- Admin Panel (hidden by default) -->
+      <a
+        id="admin-panel-btn"
+        href="/admin.html"
+        class="btn-primary"
+        style="width: 100%; display: none; text-align: center; text-decoration: none; margin-top: 8px;"
+        title="Перейти в админ-панель"
+      >
+        ⚙️ Админ
+      </a>
+
+      <!-- Chats List Title -->
+      <div style="font-size: 11px; color: var(--light-text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin: 12px 0 8px; font-weight: 600;">
+        💬 Чаты
+      </div>
+
+      <!-- Chats List -->
+      <ul class="chat-list" id="chat-list"></ul>
+
+      <!-- Footer Actions (hidden) -->
+      <div style="display: none; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px;">
+        <form action="/logout" method="POST" style="width: 100%;">
+          <button type="submit" class="btn-secondary" style="width: 100%;">Выйти</button>
+        </form>
+        <form
+          action="/delete-account"
+          method="POST"
+          onsubmit="return confirm('Точно удалить? Необратимо.');"
+          style="width: 100%;"
+        >
+          <button type="submit" class="btn-ghost" style="width: 100%;">🗑️ Удалить</button>
+        </form>
+      </div>
+    </aside>
+
+    <!-- MAIN CHAT AREA -->
+    <main class="chat-main" id="chat-main">
+      <!-- Header -->
+      <div class="chat-main-header">
+        <button id="back-btn" class="back-btn" type="button" title="Вернуться к чатам">
+          ← Чаты
+        </button>
+        <div class="chat-main-title" id="chat-title" title="Информация о чате">
+          💬 Выберите чат
+        </div>
+      </div>
+
+      <div class="chat-main-subtitle" id="chat-subtitle">
+        Нажмите на чат слева или создайте новый
+      </div>
+
+      <!-- Messages Container -->
+      <section id="messages" class="chat-main-messages" role="log" aria-label="Сообщения чата"></section>
+
+      <!-- Input Area -->
+      <form id="chat-form" class="chat-main-input" role="form">
+        <input type="file" id="file-input" style="display: none;" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt,.zip,.rar" />
+        
+        <button type="button" id="attach-btn" class="input-icon-btn" title="Отправить файл" aria-label="Отправить файл">
+          📎
+        </button>
+        
+        <button type="button" id="record-btn" class="input-icon-btn" title="Голосовое сообщение" aria-label="Записать голос">
+          🎙️
+        </button>
+        
+        <button type="button" id="sticker-btn" class="input-icon-btn" title="Отправить стикер" aria-label="Отправить стикер">
+          🏷️
+        </button>
+        
+        <input
+          id="message-input"
+          type="text"
+          placeholder="Напишите сообщение..."
+          autocomplete="off"
+          spellcheck="true"
+          aria-label="Введите сообщение"
+        />
+        
+        <button type="submit" class="input-send-btn" id="send-btn" title="Отправить" aria-label="Отправить сообщение">
+          ⬆️
+        </button>
+      </form>
+    </main>
+  </div>
+
+  <!-- Modals & Dialogs -->
+  <div id="profile-modal" class="modal" role="dialog" aria-labelledby="profile-modal-title" aria-modal="true"></div>
+  <div id="sticker-modal" class="modal" role="dialog" aria-labelledby="sticker-modal-title" aria-modal="true"></div>
+  <div id="nexus-modal" class="modal" role="dialog" aria-labelledby="nexus-modal-title" aria-modal="true"></div>
+  <div id="create-chat-modal" class="modal" role="dialog" aria-labelledby="create-modal-title" aria-modal="true"></div>
+  <div id="confirm-modal" class="modal" role="alertdialog" aria-labelledby="confirm-title" aria-modal="true"></div>
+
+  <!-- Scripts -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/theme-toggle.js" defer></script>
+  <script src="/chat-app.js" defer></script>
+</body>
+</html>
