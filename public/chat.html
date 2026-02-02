@@ -490,6 +490,24 @@
     </div>
   </div>
 
+  <!-- Модальное окно профиля Nexis -->
+  <div id="nexis-profile-modal" class="confirm-modal" style="display: none;">
+    <div class="confirm-modal-backdrop"></div>
+    <div class="confirm-modal-content" style="max-width: 520px;">
+      <button id="nexis-profile-close" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: inherit;">✕</button>
+      <div style="display: flex; gap: 16px; align-items: center; margin-bottom: 16px;">
+        <img id="nexis-profile-avatar" src="" alt="Nexis" style="width: 72px; height: 72px; border-radius: 12px; background: var(--hover-color); object-fit: cover;">
+        <div style="flex: 1;">
+          <div id="nexis-profile-name" class="confirm-modal-title" style="margin: 0;"></div>
+          <div id="nexis-profile-tag" style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;"></div>
+          <div id="nexis-profile-subscribers" style="font-size: 12px; color: var(--text-secondary); margin-top: 6px;"></div>
+        </div>
+      </div>
+      <div id="nexis-profile-description" style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;"></div>
+      <div id="nexis-profile-stats" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;"></div>
+    </div>
+  </div>
+
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
@@ -1628,31 +1646,6 @@
       }
 
       appendBotChatMessage(bot.name, data.response?.text || "Готово");
-
-      const buttons = data.response?.buttons || [];
-      if (Array.isArray(buttons) && buttons.length > 0) {
-        const actionsContainer = document.getElementById("bot-chat-actions");
-        if (actionsContainer) {
-          const mapActionToCommand = {
-            help: "/help",
-            settings: "/settings",
-            notifications: "/settings",
-            theme: "/settings"
-          };
-          buttons.forEach((btn) => {
-            const actionBtn = document.createElement("button");
-            actionBtn.textContent = btn.text || "Действие";
-            actionBtn.style.cssText = "padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(139,92,246,0.4); background: rgba(139,92,246,0.15); color: #e5e7eb; cursor: pointer;";
-            actionBtn.addEventListener("click", () => {
-              const mapped = mapActionToCommand[btn.action];
-              if (mapped) {
-                sendBotCommandFromChat(bot, mapped);
-              }
-            });
-            actionsContainer.appendChild(actionBtn);
-          });
-        }
-      }
     } catch (err) {
       appendBotChatMessage(bot.name, err.message || "Ошибка выполнения команды");
     }
@@ -1662,6 +1655,7 @@
   function showBotInfo(bot) {
     currentChatId = null;
     currentNexusView = null;
+    currentBotData = bot;
     if (window.currentNexphereId) {
       socket.emit("nexphere:leave", { nexphereId: window.currentNexphereId });
       window.currentNexphereId = null;
@@ -1674,7 +1668,7 @@
     messagesDiv.innerHTML = `
       <div style="padding: 20px; text-align: center; color: #9ca3af;">
         <div style="font-size: 60px; margin-bottom: 10px;">🤖</div>
-        <h2 style="color: #e5e7eb; margin-bottom: 6px;">${escapeHtml(bot.name)}</h2>
+        <h2 id="bot-chat-title" style="color: #e5e7eb; margin-bottom: 6px; cursor: pointer;">${escapeHtml(bot.name)}</h2>
         <p style="margin-bottom: 10px;">${escapeHtml(bot.description || "")}</p>
         <div style="font-size: 14px; color: #6b7280; margin: 10px 0;">
           👥 ${bot.subscriber_count || 0} подписчиков
@@ -1684,30 +1678,80 @@
             <p style="color: #a78bfa; margin: 0;">💡 Это ваш бот Nexis. Пользователи, подписавшиеся на него, видят обновления в своей нексоленте.</p>
           </div>
         ` : ""}
-        <div id="bot-chat-actions" style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 14px;"></div>
       </div>
-      <div id="bot-chat-messages" style="padding: 10px 16px 20px; display: flex; flex-direction: column;"></div>
+      <div id="bot-chat-messages" style="padding: 10px 16px 10px; display: flex; flex-direction: column; max-height: calc(100vh - 420px); overflow-y: auto;"></div>
+      <div id="bot-chat-input" style="display: flex; gap: 8px; padding: 12px 16px 20px;">
+        <input id="bot-command-input" type="text" placeholder="Введите команду (например, /start)" style="flex: 1; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(148, 163, 184, 0.2); background: rgba(15, 23, 42, 0.6); color: #e5e7eb;">
+        <button id="bot-command-send" style="padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(139,92,246,0.4); background: rgba(139,92,246,0.25); color: #e5e7eb; cursor: pointer;">Отправить</button>
+      </div>
     `;
 
-    const actions = document.getElementById("bot-chat-actions");
-    if (actions) {
-      const buttons = [
-        { label: "/start", cmd: "/start" },
-        { label: "/help", cmd: "/help" },
-        { label: "/settings", cmd: "/settings" }
-      ];
-      buttons.forEach((btn) => {
-        const el = document.createElement("button");
-        el.textContent = btn.label;
-        el.style.cssText = "padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(139,92,246,0.4); background: rgba(139,92,246,0.15); color: #e5e7eb; cursor: pointer;";
-        el.addEventListener("click", () => sendBotCommandFromChat(bot, btn.cmd));
-        actions.appendChild(el);
+    const botChatTitle = document.getElementById("bot-chat-title");
+    if (botChatTitle) {
+      botChatTitle.addEventListener("click", () => openNexisProfile(bot));
+    }
+
+    const inputEl = document.getElementById("bot-command-input");
+    const sendBtn = document.getElementById("bot-command-send");
+    const sendCurrentCommand = () => {
+      const value = inputEl?.value?.trim();
+      if (!value) return;
+      if (inputEl) inputEl.value = "";
+      sendBotCommandFromChat(bot, value);
+    };
+
+    if (sendBtn) {
+      sendBtn.addEventListener("click", sendCurrentCommand);
+    }
+    if (inputEl) {
+      inputEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          sendCurrentCommand();
+        }
       });
+      inputEl.focus();
     }
     
     if (form) {
       form.style.display = "none";
     }
+  }
+
+  function openNexisProfile(bot) {
+    if (!bot || !nexisProfileModal) return;
+
+    nexisProfileName.textContent = bot.name || "Nexis";
+    nexisProfileTag.textContent = bot.id ? `@nexis-${bot.id}` : "@nexis";
+    nexisProfileSubscribers.textContent = `👥 ${bot.subscriber_count || 0} подписчиков`;
+    nexisProfileDescription.textContent = bot.description || "Описание отсутствует";
+    nexisProfileAvatar.src = bot.avatar_url || 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/%3E%3Ctext x=%2250%22 y=%2255%22 font-size=%2240%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3E🤖%3C/text%3E%3C/svg%3E';
+
+    const createdAt = bot.created_at ? new Date(bot.created_at) : null;
+    const createdText = createdAt ? createdAt.toLocaleString("ru-RU") : "Неизвестно";
+    const statusText = bot.is_active === false ? "Отключен" : "Активен";
+
+    nexisProfileStats.innerHTML = `
+      <div style="padding: 10px; border-radius: 10px; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(148, 163, 184, 0.15);">
+        <div style="font-size: 12px; color: var(--text-secondary);">Статус</div>
+        <div style="font-weight: 600; margin-top: 4px;">${statusText}</div>
+      </div>
+      <div style="padding: 10px; border-radius: 10px; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(148, 163, 184, 0.15);">
+        <div style="font-size: 12px; color: var(--text-secondary);">Создан</div>
+        <div style="font-weight: 600; margin-top: 4px;">${createdText}</div>
+      </div>
+      <div style="padding: 10px; border-radius: 10px; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(148, 163, 184, 0.15);">
+        <div style="font-size: 12px; color: var(--text-secondary);">ID</div>
+        <div style="font-weight: 600; margin-top: 4px;">${bot.id || "—"}</div>
+      </div>
+      <div style="padding: 10px; border-radius: 10px; background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(148, 163, 184, 0.15);">
+        <div style="font-size: 12px; color: var(--text-secondary);">Тип</div>
+        <div style="font-weight: 600; margin-top: 4px;">Nexis Bot</div>
+      </div>
+    `;
+
+    nexisProfileModal.style.display = "flex";
+    applyThemeToModal(nexisProfileModal.querySelector('.confirm-modal-content'));
   }
   
   // 🔥 Когда сервер говорит, что чаты обновились — перезагружаем список и сообщения
@@ -4437,8 +4481,17 @@
   const botViewSubscribers = document.getElementById("bot-view-subscribers");
   const botSubscribeBtn = document.getElementById("bot-subscribe-btn");
   const botViewError = document.getElementById("bot-view-error");
+  const nexisProfileModal = document.getElementById("nexis-profile-modal");
+  const nexisProfileClose = document.getElementById("nexis-profile-close");
+  const nexisProfileAvatar = document.getElementById("nexis-profile-avatar");
+  const nexisProfileName = document.getElementById("nexis-profile-name");
+  const nexisProfileTag = document.getElementById("nexis-profile-tag");
+  const nexisProfileSubscribers = document.getElementById("nexis-profile-subscribers");
+  const nexisProfileDescription = document.getElementById("nexis-profile-description");
+  const nexisProfileStats = document.getElementById("nexis-profile-stats");
 
   let currentBotId = null;
+  let currentBotData = null;
   let currentBotsTab = "explore";
 
   // Применяем тему при открытии модального окна
@@ -4605,6 +4658,12 @@
     });
   }
 
+  if (nexisProfileClose) {
+    nexisProfileClose.addEventListener("click", () => {
+      nexisProfileModal.style.display = "none";
+    });
+  }
+
   if (botCreateCancel) {
     botCreateCancel.addEventListener("click", closeBotCreateModal);
   }
@@ -4638,6 +4697,28 @@
       botsTabExplore.style.opacity = "0.7";
       loadBots("subscribed");
     });
+  }
+
+  if (chatTitleEl) {
+    chatTitleEl.style.cursor = "pointer";
+    chatTitleEl.addEventListener("click", () => {
+      if (currentBotData) {
+        openNexisProfile(currentBotData);
+      }
+    });
+  }
+
+  if (nexisProfileModal) {
+    const backdrop = nexisProfileModal.querySelector('.confirm-modal-backdrop');
+    if (backdrop) {
+      backdrop.addEventListener('click', () => {
+        nexisProfileModal.classList.add('closing');
+        setTimeout(() => {
+          nexisProfileModal.classList.remove('closing');
+          nexisProfileModal.style.display = 'none';
+        }, 200);
+      });
+    }
   }
 
   if (botCreateForm) {
