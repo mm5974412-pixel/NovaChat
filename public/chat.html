@@ -1800,6 +1800,13 @@
                     showAlert(data.error || 'Ошибка удаления', 'Ошибка', 'ОК', 'danger');
                     return;
                   }
+                  
+                  // Удаляем бота из нексоленты сразу
+                  const botItem = chatList.querySelector(`li[data-bot-id="${bot.id}"]`);
+                  if (botItem) {
+                    botItem.remove();
+                  }
+                  
                   showAlert(`Бот "${bot.name}" удален`, 'Успех', 'ОК', 'success');
                   nexisProfileModal.style.display = 'none';
                   loadChats();
